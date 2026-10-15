@@ -1,0 +1,62 @@
+version: "3.9"
+
+services:
+  # ── FalkorDB ──────────────────────────────────────────────────────────────
+  falkordb:
+    image: falkordb/falkordb:latest
+    container_name: argus-falkordb
+    ports:
+      - "6379:6379"
+      - "3000:3000"        # FalkorDB browser UI
+    environment:
+      - FALKORDB_ALLOW_EMPTY_PASSWORD=yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    volumes:
+      - falkordb-data:/data
+
+  # ── ARGUS backend ─────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend
+    container_name: argus-backend
+    ports:
+      - "8001:8001"
+    environment:
+      - FALKORDB_HOST=falkordb
+      - FALKORDB_PORT=6379
+      - LLM_API_KEY=${LLM_API_KEY:-}
+      - LLM_BASE_URL=${LLM_BASE_URL:-https://api.groq.com/openai/v1}
+      - LLM_MODEL=${LLM_MODEL:-llama-3.3-70b-versatile}
+    depends_on:
+      falkordb:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8001/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Frontend static server (nginx) ────────────────────────────────────────
+  frontend:
+    image: nginx:alpine
+    container_name: argus-frontend
+    ports:
+      - "5173:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - frontend-dist:/usr/share/nginx/html:ro
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  falkordb-data:
+  frontend-dist:
