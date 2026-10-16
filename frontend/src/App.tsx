@@ -13,6 +13,7 @@ import { CopilotView } from './components/CopilotView';
 import { AgentSwarmView } from './components/AgentSwarmView';
 import { AgentView } from './components/AgentView';
 import { TriageView } from './components/TriageView';
+import { DecisionTrailView } from './components/DecisionTrailView';
 import { JudgeTourModal } from './components/JudgeTourModal';
 import { McpConfigModal } from './components/McpConfigModal';
 
@@ -172,7 +173,8 @@ const StatusBar: React.FC<{
   topology: GraphTopology | null;
   attackResult: RedTeamAttackResult | null;
   isRemediated: boolean;
-}> = ({ topology, attackResult, isRemediated }) => (
+  isFalkorDown: boolean;
+}> = ({ topology, attackResult, isRemediated, isFalkorDown }) => (
   <div
     style={{
       flexShrink: 0,
@@ -188,7 +190,9 @@ const StatusBar: React.FC<{
       color: '#475569',
     }}
   >
-    <span><span style={{ color: '#10b981' }}>●</span> FalkorDB <span style={{ color: '#34d399' }}>LIVE</span></span>
+    {isFalkorDown
+      ? <span><span style={{ color: '#f87171' }}>●</span> FalkorDB <span style={{ color: '#f87171' }}>OFFLINE</span></span>
+      : <span><span style={{ color: topology ? '#10b981' : '#475569' }}>●</span> FalkorDB <span style={{ color: topology ? '#34d399' : '#64748b' }}>{topology ? 'CONNECTED' : 'CONNECTING…'}</span></span>}
     {topology && (
       <>
         <span>⬡ {topology.count_nodes} nodes</span>
@@ -230,6 +234,16 @@ export const App: React.FC = () => {
   const [currentHopIndex, setCurrentHopIndex] = useState<number>(0);
   const [isTourOpen, setIsTourOpen] = useState(false);
   const [isMcpOpen, setIsMcpOpen] = useState(false);
+  const [trailRunId, setTrailRunId] = useState<string | null>(null);
+  const [trailNonce, setTrailNonce] = useState(0);
+
+  // Switch to the Decision Trail view, optionally focused on a specific run.
+  const handleViewDecisionTrail = useCallback((runId?: string | null, entrypoint?: string) => {
+    if (entrypoint) setSelectedEntrypoint(entrypoint);
+    setTrailRunId(runId ?? null);
+    setTrailNonce(n => n + 1);
+    setActiveTab('trail');
+  }, []);
 
   const loadTopology = async () => {
     try {
@@ -451,6 +465,7 @@ export const App: React.FC = () => {
                 onStreamingRemediationComplete={(result) => {
                   setRemediationResult(result);
                 }}
+                onViewDecisionTrail={handleViewDecisionTrail}
               />
             </div>
           </>
@@ -458,7 +473,16 @@ export const App: React.FC = () => {
 
         {activeTab === 'triage' && <TriageView />}
         {activeTab === 'copilot' && <CopilotView />}
-        {activeTab === 'swarm' && <AgentView selectedEntrypoint={selectedEntrypoint} />}
+        {activeTab === 'swarm' && (
+          <AgentView selectedEntrypoint={selectedEntrypoint} onViewDecisionTrail={handleViewDecisionTrail} />
+        )}
+        {activeTab === 'trail' && (
+          <DecisionTrailView
+            selectedEntrypoint={selectedEntrypoint}
+            runId={trailRunId}
+            requestNonce={trailNonce}
+          />
+        )}
 
         {activeTab === 'audit' && (
           <GlobalAuditView
@@ -476,7 +500,7 @@ export const App: React.FC = () => {
         {activeTab === 'playground' && <CypherPlaygroundView />}
       </div>
 
-      <StatusBar topology={topology} attackResult={attackResult} isRemediated={isRemediated} />
+      <StatusBar topology={topology} attackResult={attackResult} isRemediated={isRemediated} isFalkorDown={isFalkorDown} />
 
       <JudgeTourModal
         isOpen={isTourOpen}

@@ -17,6 +17,7 @@ interface OverviewStats {
   total_edges: number;
   users: string[];
   crown_jewels: string[];
+  health?: Record<string, any>;
 }
 
 const StatCard: React.FC<{
@@ -173,8 +174,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onStartDemo, onCha
             margin: 0, fontSize: 14, color: '#64748b', maxWidth: 700,
             lineHeight: 1.7,
           }}>
-            The only cloud security platform that uses a <strong style={{ color: '#38bdf8' }}>live property graph</strong> to discover multi-hop IAM privilege escalation chains in <strong style={{ color: '#34d399' }}>&lt;1ms</strong>.
-            Traditional Vector RAG misses 85% of these attacks. FalkorDB catches 100%.
+            Uses a <strong style={{ color: '#38bdf8' }}>live property graph</strong> in FalkorDB to discover multi-hop IAM privilege escalation chains by direct traversal.
+            Multi-hop chains are hard to recover from per-policy text retrieval; on a graph every hop is an explicit edge.
           </p>
         </div>
 
@@ -252,21 +253,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onStartDemo, onCha
         {/* Stats grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 36 }}>
           <StatCard
-            value={stats?.total_nodes ?? 174}
+            value={stats?.total_nodes ?? '…'}
             label="IAM Nodes"
             sublabel="Users, Roles, Policies, Resources"
             color="#38bdf8"
             icon="⬡"
           />
           <StatCard
-            value={stats?.total_edges ?? 244}
+            value={stats?.total_edges ?? '…'}
             label="Permission Edges"
             sublabel="Trust relationships mapped"
             color="#c084fc"
             icon="⇌"
           />
           <StatCard
-            value={`${stats?.crown_jewels?.length ?? 3}`}
+            value={stats?.crown_jewels ? `${stats.crown_jewels.length}` : '…'}
             label="Crown Jewels"
             sublabel="Critical protected assets"
             color="#fbbf24"
@@ -284,9 +285,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onStartDemo, onCha
             icon="⚠"
           />
           <StatCard
-            value="0.44ms"
-            label="Avg Query Latency"
-            sublabel="873× faster than Vector RAG"
+            value={triage && typeof triage.execution_time_ms === 'number' ? `${triage.execution_time_ms.toFixed(1)}ms` : '…'}
+            label="Triage Scan Time"
+            sublabel="Measured on this load (/api/triage/summary)"
             color="#34d399"
             glowColor="rgba(52,211,153,0.3)"
             icon="⚡"
@@ -302,9 +303,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onStartDemo, onCha
           flexWrap: 'wrap',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontFamily: 'var(--font-mono)' }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981' }} />
-            <span style={{ color: '#475569' }}>FalkorDB Engine</span>
-            <span style={{ color: '#34d399', fontWeight: 700 }}>ONLINE</span>
+            {(() => {
+              const mode = stats?.health?.mode;
+              const label = !stats ? 'CHECKING…' : mode === 'live' ? 'ONLINE' : mode ? `FALLBACK (${String(mode)})` : 'UNKNOWN';
+              const c = mode === 'live' ? '#34d399' : stats ? '#fbbf24' : '#64748b';
+              return (
+                <>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: c, boxShadow: `0 0 8px ${c}` }} />
+                  <span style={{ color: '#475569' }}>FalkorDB Engine</span>
+                  <span style={{ color: c, fontWeight: 700 }}>{label}</span>
+                </>
+              );
+            })()}
           </div>
           <div style={{ width: 1, background: 'rgba(255,255,255,0.06)' }} />
           <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: '#475569' }}>
@@ -312,17 +322,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onStartDemo, onCha
           </div>
           <div style={{ width: 1, background: 'rgba(255,255,255,0.06)' }} />
           <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: '#475569' }}>
-            Crown jewels: {stats?.crown_jewels?.join(', ') ?? 'ProdCustomerVault, ProdKMSKey, CrownJewelDB'}
+            Crown jewels: {stats?.crown_jewels?.join(', ') ?? 'loading…'}
           </div>
         </div>
 
         {/* FalkorDB vs Vector RAG comparison */}
         <div style={{ marginBottom: 36 }}>
           <h2 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 800, color: '#f8fafc', letterSpacing: '-0.02em' }}>
-            Why FalkorDB Wins
+            Graph vs Vector Retrieval
           </h2>
           <p style={{ margin: '0 0 16px', fontSize: 12, color: '#64748b' }}>
-            FalkorDB Rule #3: Graph traversal is the only correct method for transitive IAM analysis.
+            Qualitative comparison. Vector-side behaviour is not measured here; see Benchmark (simulated baseline) for details.
           </p>
 
           <div style={{
@@ -357,9 +367,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onStartDemo, onCha
             </div>
 
             <CompareRow label="Multi-hop traversal" vectorValue="Cannot — cosine similarity fails at depth 2+" falkorValue="Native shortestPath() — unlimited hops" />
-            <CompareRow label="Query latency" vectorValue="384ms avg (embedding lookup)" falkorValue="0.44ms (GraphBLAS sparse matrix)" />
-            <CompareRow label="Hallucination risk" vectorValue="HIGH — infers paths that don't exist" falkorValue="ZERO — deterministic Cypher queries" />
-            <CompareRow label="Attack detection rate" vectorValue="~15% (surface-level keywords)" falkorValue="100% (exact graph path)" />
+            <CompareRow label="Query latency" vectorValue="Not measured (embedding + ANN search)" falkorValue="Measured live per query (see Benchmark)" />
+            <CompareRow label="Path grounding" vectorValue="Can miss or infer links between chunks" falkorValue="Each reported hop is an existing edge" />
+            <CompareRow label="Multi-hop path recovery" vectorValue="Limited to what top-k chunks contain" falkorValue="Exact path within the traversal depth" />
             <CompareRow label="Auto-remediation" vectorValue="Cannot — no structural awareness" falkorValue="Min-cut choke point + Terraform HCL" />
             <CompareRow label="Blast radius compute" vectorValue="N/A — no graph structure" falkorValue="Reachable node set in O(E+V)" vectorBad={true} />
           </div>
@@ -381,7 +391,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onStartDemo, onCha
                 color: '#f43f5e',
                 icon: '⚡',
                 title: 'Red Team Agent',
-                desc: 'Executes Cypher shortestPath() to find multi-hop IAM privilege escalation chains from any identity to Crown Jewel assets. Completes in sub-millisecond using FalkorDB GraphBLAS engine.',
+                desc: 'Executes Cypher shortestPath() to find multi-hop IAM privilege escalation chains from any identity to Crown Jewel assets. Runs as a single Cypher query on FalkorDB.',
                 tab: 'graph',
               },
               {
@@ -389,7 +399,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onStartDemo, onCha
                 color: '#34d399',
                 icon: '⊕',
                 title: 'Blue Team Remediator',
-                desc: 'Analyzes the attack path, computes the graph-theoretic min-cut choke point, and synthesizes an exact Terraform HCL patch to sever the minimal edge that eliminates 100% of escalation paths.',
+                desc: 'Analyzes the attack path, computes the graph-theoretic min-cut choke point, and synthesizes an exact Terraform HCL patch to sever the edge that breaks the discovered escalation path.',
                 tab: 'graph',
               },
               {
@@ -397,7 +407,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onStartDemo, onCha
                 color: '#38bdf8',
                 icon: '🛡️',
                 title: 'Patch & Verify',
-                desc: 'Applies the remediation directly in FalkorDB by deleting the choke point edge, then re-runs the attack simulation to confirm zero escalation paths remain. Full audit trail maintained.',
+                desc: 'Applies the remediation directly in FalkorDB by deleting the choke point edge, then re-runs the attack simulation to check whether an escalation path remains. Full audit trail maintained.',
                 tab: 'graph',
               },
             ].map(item => (

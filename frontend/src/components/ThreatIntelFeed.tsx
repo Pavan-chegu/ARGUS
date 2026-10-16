@@ -24,11 +24,11 @@ const SEVERITY_COLORS: Record<string, string> = {
 const EVENT_TEMPLATES: Omit<ThreatEvent, 'id' | 'ts'>[] = [
   { severity: 'CRITICAL', type: 'PRIV_ESC',    message: 'Multi-hop escalation path detected: DevIntern → CIRunnerRole → ProdCustomerVault', identity: 'DevIntern' },
   { severity: 'HIGH',     type: 'BLAST_RADIUS', message: 'Contractor identity reaches 9 critical assets via assumed-role traversal', identity: 'Contractor' },
-  { severity: 'HIGH',     type: 'CROWN_JEWEL',  message: 'SupportUser has 6-hop transitive access to CrownJewelDB — undetected by Vector RAG', identity: 'SupportUser' },
+  { severity: 'HIGH',     type: 'CROWN_JEWEL',  message: 'SupportUser has 6-hop transitive access to CrownJewelDB via role chaining', identity: 'SupportUser' },
   { severity: 'MEDIUM',   type: 'ANOMALY',      message: 'Unusual cross-department permission: Analytics role can assume DevOps execution role', identity: 'DataScientist' },
-  { severity: 'INFO',     type: 'GRAPH_SCAN',   message: 'FalkorDB graph traversal completed: 174 nodes, 244 edges analyzed in 0.44ms' },
+  { severity: 'INFO',     type: 'GRAPH_SCAN',   message: 'FalkorDB graph traversal completed over the seeded IAM topology' },
   { severity: 'CRITICAL', type: 'PRIV_ESC',    message: 'Privilege escalation: Contractor → BuildEC2 → BackendAppRole → ProdKMSKey (4 hops)', identity: 'Contractor' },
-  { severity: 'INFO',     type: 'REMEDIATION', message: 'Blue Team patch applied: MEMBER_OF edge severed between CIRunnerRole and BuildEC2' },
+  { severity: 'INFO',     type: 'REMEDIATION', message: 'Blue Team patch applied: ATTACHED_TO edge severed between CIRunnerRole and BuildEC2' },
   { severity: 'HIGH',     type: 'STALE_PERMS', message: 'Stale over-privileged attachment: DataPipelineRole retains admin-level S3 policy' },
   { severity: 'MEDIUM',   type: 'SHADOW_ADMIN', message: 'Shadow admin detected: SupportRole can assume EC2FullAccess via inherited policy chain' },
   { severity: 'INFO',     type: 'VERIFY',      message: 'Post-patch verification: Zero escalation paths remain from DevIntern to Crown Jewels' },
@@ -79,7 +79,7 @@ export const ThreatIntelFeed: React.FC = () => {
         fontFamily: 'var(--font-mono)',
       }}
     >
-      {/* LIVE badge */}
+      {/* Sample-feed badge: events below are illustrative templates */}
       <div style={{
         flexShrink: 0,
         padding: '0 10px',
@@ -96,7 +96,7 @@ export const ThreatIntelFeed: React.FC = () => {
           boxShadow: '0 0 6px #f43f5e',
           animation: 'pulse-feed 1.2s ease-in-out infinite',
         }} />
-        <span style={{ color: '#f87171', fontWeight: 700, letterSpacing: '0.1em' }}>LIVE</span>
+        <span title="Illustrative sample events, not read from the graph" style={{ color: '#f87171', fontWeight: 700, letterSpacing: '0.1em' }}>SAMPLE FEED (SIMULATED)</span>
       </div>
 
       {/* Scrolling events */}

@@ -30,6 +30,8 @@ export interface RedTeamStep {
   action: string;
   node_id: string;
   thought: string;
+  crown_jewel_reached?: boolean;
+  regression?: boolean;
 }
 
 export interface RedTeamAttackResult {
@@ -42,6 +44,7 @@ export interface RedTeamAttackResult {
   cypher_executed: string;
   path_nodes: GraphNode[];
   steps: RedTeamStep[];
+  run_id?: string | null;
 }
 
 export interface BlueTeamRemediationResult {
@@ -123,10 +126,31 @@ export async function fetchRiskScorecard() {
   return res.json();
 }
 
-export async function fetchBenchmarkCompare(entrypoint: string = 'DevIntern') {
-  const res = await fetch(`${API_BASE}/graph/benchmark/compare?entrypoint=${entrypoint}`, {
+export interface BenchmarkSide {
+  name: string;
+  query_type: string;
+  result: string;
+  hops_discovered: number;
+  hallucination?: string;
+  traversal_capable: boolean;
+  latency_ms: number | null;
+  accuracy: string;
+  simulated?: boolean;
+}
+
+export interface BenchmarkCompareResult {
+  entrypoint: string;
+  vector_rag: BenchmarkSide;
+  falkordb: BenchmarkSide;
+  speedup_factor: number | null;
+  conclusion?: string;
+}
+
+export async function fetchBenchmarkCompare(entrypoint: string = 'DevIntern'): Promise<BenchmarkCompareResult> {
+  const res = await fetch(`${API_BASE}/graph/benchmark/compare?entrypoint=${encodeURIComponent(entrypoint)}`, {
     method: 'POST',
   });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
@@ -256,4 +280,74 @@ export async function fetchChokepoints(topN = 10): Promise<{ chokepoints: { node
   const res = await fetch(`${API_BASE}/triage/chokepoints?top_n=${topN}`);
   if (!res.ok) throw new Error(await res.text());
   return res.json();
+}
+
+// ── Decision Trail (agent decision trace) ─────────────────────────────────────
+export interface TraceConsidered {
+  name: string;
+  score: number;
+}
+
+export interface TraceMemoryRef {
+  id: string;
+  label: string; // 'Incident' | 'Remediation'
+  summary: string;
+}
+
+export interface TraceDecision {
+  id: string;
+  agent_id: string;
+  step: number;
+  action: string;
+  reason: string;
+  score: number;
+  ts: number | string;
+  chosen: string | null;
+  considered: TraceConsidered[];
+  informed_by: TraceMemoryRef[];
+}
+
+export interface DecisionTrace {
+  run_id: string | null;
+  incident_id: string | null;
+  decisions: TraceDecision[];
+  cypher: string;
+}
+
+async function fetchTrace(url: string): Promise<DecisionTrace> {
+  const res = await fetch(url);
+  if (res.status === 404) throw Object.assign(new Error('No decision trail found'), { status: 404 });
+  if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status}`), { status: res.status });
+  const data = await res.json();
+  return {
+    run_id: data?.run_id ?? null,
+    incident_id: data?.incident_id ?? null,
+    decisions: Array.isArray(data?.decisions) ? data.decisions : [],
+    cypher: typeof data?.cypher === 'string' ? data.cypher : '',
+  };
+}
+
+export function fetchLatestTrace(entrypoint: string): Promise<DecisionTrace> {
+  return fetchTrace(`${API_BASE}/trace/latest?entrypoint=${encodeURIComponent(entrypoint)}`);
+}
+
+export function fetchTraceByRun(runId: string): Promise<DecisionTrace> {
+  return fetchTrace(`${API_BASE}/trace/run/${encodeURIComponent(runId)}`);
+}
+
+export function fetchTraceByIncident(incidentId: string): Promise<DecisionTrace> {
+  return fetchTrace(`${API_BASE}/trace/incident/${encodeURIComponent(incidentId)}`);
+}
+
+export interface SwarmEntrypoint {
+  name: string;
+  department?: string;
+  compromised?: boolean;
+}
+
+export async function fetchSwarmEntrypoints(): Promise<SwarmEntrypoint[]> {
+  const res = await fetch(`${API_BASE}/swarm/entrypoints`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  return Array.isArray(data?.entrypoints) ? data.entrypoints : [];
 }

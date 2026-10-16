@@ -16,6 +16,8 @@ interface AgentTerminalProps {
   onStreamingAttackComplete?: (result: RedTeamAttackResult) => void;
   onStreamingRemediationComplete?: (result: BlueTeamRemediationResult) => void;
   isStreamingMode?: boolean;
+  /** Opens the Decision Trail view for a run (shown when the result carries a run_id). */
+  onViewDecisionTrail?: (runId: string) => void;
 }
 
 type LogLine = {
@@ -154,6 +156,7 @@ export const AgentTerminal: React.FC<AgentTerminalProps> = ({
   onStreamingAttackComplete,
   onStreamingRemediationComplete,
   isStreamingMode = false,
+  onViewDecisionTrail,
 }) => {
   const [logs, setLogs] = useState<LogLine[]>([]);
   const [killChain, setKillChain] = useState<KillChainPhase[]>(KILL_CHAIN);
@@ -189,7 +192,7 @@ export const AgentTerminal: React.FC<AgentTerminalProps> = ({
         addLog('success', `✔ No escalation path found — Identity is LEAST-PRIVILEGE COMPLIANT`);
       } else {
         attackResult.steps?.forEach((step, i) => {
-          const phaseId = PHASE_TO_CHAIN[step.phase] || 'escalate';
+          const phaseId = step.crown_jewel_reached ? 'objective' : (PHASE_TO_CHAIN[step.phase] || 'escalate');
           addLog('step', `[${step.phase}] ${step.action}`);
           setKillChain(prev => prev.map(p =>
             p.id === phaseId ? { ...p, status: 'done' } :
@@ -238,7 +241,7 @@ export const AgentTerminal: React.FC<AgentTerminalProps> = ({
     es.addEventListener('step', (e: MessageEvent) => {
       const data = JSON.parse(e.data);
       const step = data.step;
-      const phaseId = PHASE_TO_CHAIN[step.phase] || 'escalate';
+      const phaseId = step.crown_jewel_reached ? 'objective' : (PHASE_TO_CHAIN[step.phase] || 'escalate');
       addLog('step', `[${step.phase}] ${step.action}`);
       setKillChain(prev => prev.map(p => {
         if (p.id === 'recon') return { ...p, status: 'done' };
@@ -347,8 +350,8 @@ export const AgentTerminal: React.FC<AgentTerminalProps> = ({
         addLog('error', '⚠ Alternative path still reachable — additional remediation may be needed.');
       }
     } catch {
-      setVerifyResult('✔ No path found (HTTP 404) — attack vector eliminated.');
-      addLog('success', '🛡️ Attack vector confirmed BLOCKED.');
+      setVerifyResult('⚠ Verification request failed — could not confirm whether the path is blocked.');
+      addLog('error', '⚠ Post-patch verification request failed.');
     } finally {
       setIsVerifying(false);
     }
@@ -478,6 +481,21 @@ export const AgentTerminal: React.FC<AgentTerminalProps> = ({
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#fbbf24' }} className="cursor-blink" />
                 )}
               </div>
+            )}
+
+            {/* Link to the recorded decision trail for this run */}
+            {activeResult?.run_id && onViewDecisionTrail && !isAttacking && (
+              <button
+                onClick={() => onViewDecisionTrail(activeResult.run_id as string)}
+                title={`run_id ${activeResult.run_id}`}
+                style={{
+                  alignSelf: 'flex-start', padding: '5px 10px', borderRadius: 7,
+                  background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.3)',
+                  color: '#fbbf24', fontSize: 10.5, fontFamily: 'var(--font-mono)', cursor: 'pointer',
+                }}
+              >
+                ⇣ View decision trail
+              </button>
             )}
 
             {/* Blue Team Deploy button */}
@@ -651,7 +669,7 @@ export const AgentTerminal: React.FC<AgentTerminalProps> = ({
                     </span>
                   </div>
                   <div style={{ fontSize: 10.5, color: '#94a3b8', lineHeight: 1.5 }}>
-                    Severing this single edge eliminates <strong style={{ color: '#34d399' }}>100%</strong> of Crown Jewel transitive paths while preserving 94% of operational IAM permissions.
+                    Severing this edge breaks the discovered Crown Jewel path. Use "Verify" after applying the patch to check whether an alternative path remains.
                   </div>
                 </div>
 

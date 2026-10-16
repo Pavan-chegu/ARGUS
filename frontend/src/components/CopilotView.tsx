@@ -476,7 +476,7 @@ export const CopilotView: React.FC = () => {
               marginTop: 4,
             }}
           >
-            Natural Language queries translated to Cypher graph traversals for zero-hallucination security intelligence.
+            Natural language questions translated to Cypher graph traversals, so each answer is grounded in graph query results.
           </p>
         </div>
 
@@ -519,7 +519,7 @@ export const CopilotView: React.FC = () => {
               <div style={{ fontWeight: 700, marginBottom: 2 }}>❌ Traditional Vector RAG</div>
               <div>• Top-k cosine similarity misses multi-hop relationships</div>
               <div>• Cannot verify privilege chains</div>
-              <div>• Prone to hallucinating IAM paths</div>
+              <div>• May infer links that are not in the data</div>
             </div>
 
             <div
@@ -534,8 +534,8 @@ export const CopilotView: React.FC = () => {
             >
               <div style={{ fontWeight: 700, marginBottom: 2 }}>✓ FalkorDB Graph RAG</div>
               <div>• Exact `shortestPath()` multi-hop traversal</div>
-              <div>• 100% deterministic & hallucination-free</div>
-              <div>• Sub-millisecond graph query response</div>
+              <div>• Deterministic query results; every hop is an edge</div>
+              <div>• Query latency reported per run</div>
             </div>
           </div>
         </div>

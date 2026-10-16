@@ -5,30 +5,34 @@ const PRESET_QUERIES = [
   {
     name: 'Find all attack paths to Crown Jewels',
     query: `MATCH p = allShortestPaths(
-  (u:User)-[:HAS_ROLE|:GRANTS|:CAN_ACCESS*1..8]->(r:Resource)
+  (u:User)-[:MEMBER_OF|HAS_POLICY|CAN_ASSUME|ATTACHED_TO|CAN_ACCESS*1..8]->(r:Resource)
 )
-WHERE r.sensitivity = 'CrownJewel'
+WHERE r.is_crown_jewel = true
 RETURN p LIMIT 10`,
   },
   {
     name: 'Most over-privileged identities',
-    query: `MATCH (u:User)-[:HAS_ROLE*1..3]->(r:Resource)
-WHERE r.sensitivity IN ['CrownJewel', 'Secret']
-RETURN u.name AS identity, count(r) AS access_count
+    query: `MATCH (u:User)-[:MEMBER_OF|HAS_POLICY|CAN_ASSUME|ATTACHED_TO|CAN_ACCESS*1..5]->(r:Resource)
+RETURN u.name AS identity, count(DISTINCT r) AS access_count
 ORDER BY access_count DESC LIMIT 10`,
   },
   {
     name: 'Crown Jewel blast radius',
-    query: `MATCH (r:Resource {sensitivity: 'CrownJewel'})
-OPTIONAL MATCH (u:User)-[:HAS_ROLE|:GRANTS|:CAN_ACCESS*1..5]->(r)
+    query: `MATCH (r:Resource {is_crown_jewel: true})
+OPTIONAL MATCH (u:User)-[:MEMBER_OF|HAS_POLICY|CAN_ASSUME|ATTACHED_TO|CAN_ACCESS*1..5]->(r)
 RETURN r.name AS resource, count(DISTINCT u) AS exposure
 ORDER BY exposure DESC`,
   },
   {
-    name: 'Shortest path: DevIntern → Prod DB',
-    query: `MATCH (u:User {name: 'DevIntern'}), (r:Resource {name: 'ProdDatabase'})
-MATCH p = shortestPath((u)-[:HAS_ROLE|:GRANTS|:CAN_ACCESS*1..8]->(r))
+    name: 'Shortest path: DevIntern → ProdCustomerVault',
+    query: `MATCH (u:User {name: 'DevIntern'}), (r:Resource {name: 'ProdCustomerVault'})
+MATCH p = shortestPath((u)-[:MEMBER_OF|HAS_POLICY|CAN_ASSUME|ATTACHED_TO|CAN_ACCESS*1..8]->(r))
 RETURN p`,
+  },
+  {
+    name: 'Agent decision trace (Incident → Decision → node)',
+    query: `MATCH (i:Incident)-[:HAS_DECISION]->(d:Decision)-[:CHOSE]->(n)
+RETURN d.step, d.action, n.name ORDER BY d.step`,
   },
 ];
 

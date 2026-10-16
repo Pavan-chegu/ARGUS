@@ -19,7 +19,7 @@ const EngineBadge: React.FC = () => {
   );
 };
 
-export type ActiveTab = 'home' | 'triage' | 'graph' | 'swarm' | 'copilot' | 'audit' | 'whatif' | 'benchmark' | 'scorecard' | 'playground';
+export type ActiveTab = 'home' | 'triage' | 'graph' | 'swarm' | 'trail' | 'copilot' | 'audit' | 'whatif' | 'benchmark' | 'scorecard' | 'playground';
 
 interface NavbarProps {
   activeTab: ActiveTab;
@@ -36,20 +36,23 @@ interface NavbarProps {
   onOpenMcpModal?: () => void;
 }
 
+// Primary tabs follow the main demo story: overview → attack → agent → why → findings → raw query.
 const PRIMARY_TABS: { id: ActiveTab; icon: string; label: string }[] = [
-  { id: 'home',    icon: '◈', label: 'Dashboard'   },
-  { id: 'triage',  icon: '⚠', label: 'Triage'      },
-  { id: 'graph',   icon: '⬡', label: 'Investigate' },
-  { id: 'swarm',   icon: '🤖', label: 'Agent Swarm'},
-  { id: 'copilot', icon: '🧠', label: 'Ask Copilot'},
+  { id: 'home',       icon: '◈', label: 'Dashboard'      },
+  { id: 'graph',      icon: '⬡', label: 'Investigate'    },
+  { id: 'swarm',      icon: '🤖', label: 'Agent'          },
+  { id: 'trail',      icon: '⇣', label: 'Decision Trail' },
+  { id: 'triage',     icon: '⚠', label: 'Triage'         },
+  { id: 'playground', icon: '💻', label: 'Cypher'         },
 ];
 
+// Secondary tools live in the "More" dropdown.
 const MORE_TABS: { id: ActiveTab; icon: string; label: string; desc: string }[] = [
-  { id: 'benchmark',  icon: '⚡', label: 'Benchmark',    desc: 'Vector vs Graph RAG comparison' },
+  { id: 'copilot',    icon: '🧠', label: 'Ask Copilot',  desc: 'Natural-language questions over the graph' },
+  { id: 'benchmark',  icon: '⚡', label: 'Benchmark',    desc: 'Graph traversal vs simulated vector RAG' },
   { id: 'audit',      icon: '🛰️', label: 'Global Audit', desc: 'Org-wide IAM blast radii'      },
   { id: 'whatif',     icon: '🔮', label: 'What-If Sim',  desc: 'Simulate policy modifications' },
   { id: 'scorecard',  icon: '📊', label: 'Scorecard',    desc: 'Executive compliance scorecard'},
-  { id: 'playground', icon: '💻', label: 'Playground',   desc: 'Direct FalkorDB Cypher query'  },
 ];
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -162,7 +165,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             }}
           >
             <span>{isMoreTabActive ? activeMoreTab?.icon : '⚙️'}</span>
-            <span>{isMoreTabActive ? activeMoreTab?.label : 'More Tools'}</span>
+            <span>{isMoreTabActive ? activeMoreTab?.label : 'More'}</span>
             <span style={{ fontSize: 9, opacity: 0.7 }}>▾</span>
           </button>
 

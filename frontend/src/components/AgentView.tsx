@@ -158,8 +158,13 @@ const ErrorBanner: React.FC<{ message: string }> = ({ message }) => (
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
-export const AgentView: React.FC<{ selectedEntrypoint?: string }> = ({
+export const AgentView: React.FC<{
+  selectedEntrypoint?: string;
+  /** Opens the Decision Trail view; called with the run_id if the stream reported one. */
+  onViewDecisionTrail?: (runId?: string | null, entrypoint?: string) => void;
+}> = ({
   selectedEntrypoint = 'DevIntern',
+  onViewDecisionTrail,
 }) => {
   const [identity, setIdentity] = useState(selectedEntrypoint);
   const [autoApply, setAutoApply] = useState(false);
@@ -170,6 +175,7 @@ export const AgentView: React.FC<{ selectedEntrypoint?: string }> = ({
   const [showMemoryPanel, setShowMemoryPanel] = useState(true);
   const [memoryData, setMemoryData] = useState<MemoryData | null>(null);
   const [loadingMemory, setLoadingMemory] = useState(false);
+  const [runId, setRunId] = useState<string | null>(null);
 
   const logEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -219,6 +225,7 @@ export const AgentView: React.FC<{ selectedEntrypoint?: string }> = ({
     }
     setLog([]);
     setVerdict(null);
+    setRunId(null);
     setRunning(true);
     const t0 = Date.now();
 
@@ -246,6 +253,7 @@ export const AgentView: React.FC<{ selectedEntrypoint?: string }> = ({
             try {
               const evt: SSEEvent = JSON.parse(line.slice(6));
               if (evt.type === 'verdict') setVerdict(evt.content as string);
+              if (typeof evt.run_id === 'string' && evt.run_id) setRunId(evt.run_id);
               if (evt.type === 'done') setElapsedMs(Date.now() - t0);
               addEntry(evt);
             } catch { /* ignore parse error */ }
@@ -363,6 +371,19 @@ export const AgentView: React.FC<{ selectedEntrypoint?: string }> = ({
             <span style={{ color: '#475569' }}>Elapsed: <span style={{ color: '#34d399' }}>{(elapsedMs / 1000).toFixed(1)}s</span></span>
           )}
           {verdict && <span style={{ color: '#22c55e' }}>✓ Verdict ready</span>}
+          {!running && onViewDecisionTrail && (verdict || runId) && (
+            <button
+              onClick={() => onViewDecisionTrail(runId, identity)}
+              title={runId ? `run_id ${runId}` : 'Latest trail for this identity'}
+              style={{
+                marginLeft: 'auto', padding: '1px 8px', borderRadius: 6, cursor: 'pointer',
+                background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.3)',
+                color: '#fbbf24', fontFamily: 'var(--font-mono)', fontSize: 10,
+              }}
+            >
+              ⇣ View decision trail
+            </button>
+          )}
           {running && <span style={{ color: '#fbbf24' }}>● Running…</span>}
         </div>
       )}

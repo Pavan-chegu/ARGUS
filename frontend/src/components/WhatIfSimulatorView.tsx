@@ -2,24 +2,24 @@ import React, { useState } from 'react';
 import { runWhatIfSimulation, WhatIfResult } from '../services/api';
 
 const SOURCES = [
-  'Developer_5',
-  'Developer_12',
-  'Developer_22',
+  'umar.garcia',
+  'alice.silva',
+  'hana.rossi',
   'DataScientist',
-  'QAEngineeer',
-  'WorkerInstance_7',
+  'QAEngineer',
+  'payments-worker-lambda',
   'SupportUser',
   'CloudAdmin',
 ];
 
+// CAN_ASSUME may only point into a Role, so targets are Role nodes only.
 const TARGETS = [
   'CIRunnerRole',
   'BackendAppRole',
   'AdminRole',
   'DynamoDBReaderRole',
   'ReadOnlyRole',
-  'ProdCustomerVault',
-  'ProdKMSKey',
+  'SupportOpsRole',
 ];
 
 export const WhatIfSimulatorView: React.FC = () => {
@@ -247,7 +247,7 @@ export const WhatIfSimulatorView: React.FC = () => {
 
               {/* Rule #3 Compliance Proof Note */}
               <div style={{ fontSize: 10, color: '#64748b', fontFamily: 'var(--font-mono)', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 10 }}>
-                💡 <strong>Why FalkorDB:</strong> Traditional Vector Search RAG cannot evaluate hypothetical graph topologies because embeddings are static text snapshots. FalkorDB graph traversals evaluate dynamic what-if branches in sub-milliseconds.
+                💡 <strong>Why FalkorDB:</strong> Traditional Vector Search RAG cannot evaluate hypothetical graph topologies because embeddings are static text snapshots. FalkorDB evaluates each what-if branch as a live graph traversal; the measured time is shown with the result.
               </div>
             </div>
           )}

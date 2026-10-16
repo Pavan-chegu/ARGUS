@@ -1,30 +1,55 @@
 import React, { useState } from 'react';
-import { fetchBenchmarkCompare } from '../services/api';
+import { fetchBenchmarkCompare, BenchmarkCompareResult, BenchmarkSide } from '../services/api';
 
 interface BenchmarkViewProps { entrypoint: string; }
 
-interface BenchmarkResult {
-  falkordb_time_ms: number;
-  vector_rag_time_ms: number;
-  speedup: number;
-  falkordb_path_length: number;
-  falkordb_cypher: string;
-}
+const SideCard: React.FC<{ side: BenchmarkSide; color: string; title: string }> = ({ side, color, title }) => (
+  <div className="rounded-2xl p-5 space-y-3" style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${color}30` }}>
+    <div className="flex items-center justify-between gap-2">
+      <div className="text-[11px] uppercase tracking-widest font-mono" style={{ color }}>{title}</div>
+      {side.simulated ? (
+        <span className="badge badge-critical" title="This side is a labelled simulation, not a measurement">SIMULATED</span>
+      ) : (
+        <span className="badge badge-ok" title="Measured live against the active graph engine">MEASURED</span>
+      )}
+    </div>
+    <div className="text-slate-200 font-semibold text-[12px] font-mono">{side.name}</div>
+    <div className="text-slate-500 text-[11px] font-mono">{side.query_type}</div>
+    <div className="text-[11px] font-mono space-y-1 pt-1">
+      <div className="text-slate-400">Result: <span className="text-slate-200">{side.result}</span></div>
+      <div className="text-slate-400">Hops discovered: <span className="text-slate-200">{side.hops_discovered}</span></div>
+      <div className="text-slate-400">Multi-hop traversal: <span className="text-slate-200">{side.traversal_capable ? 'yes' : 'no'}</span></div>
+      <div className="text-slate-400">
+        Latency:{' '}
+        <span className="text-slate-200">
+          {typeof side.latency_ms === 'number' ? `${side.latency_ms} ms` : 'not measured'}
+        </span>
+      </div>
+      <div className="text-slate-400">Accuracy: <span className="text-slate-200">{side.accuracy}</span></div>
+      {side.hallucination && (
+        <div className="text-slate-400">Failure mode: <span className="text-slate-200">{side.hallucination}</span></div>
+      )}
+    </div>
+  </div>
+);
 
 export const BenchmarkView: React.FC<BenchmarkViewProps> = ({ entrypoint }) => {
-  const [result, setResult] = useState<BenchmarkResult | null>(null);
+  const [result, setResult] = useState<BenchmarkCompareResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const run = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const res = await fetchBenchmarkCompare(entrypoint);
+      if (!res || !res.falkordb || !res.vector_rag) throw new Error('Unexpected benchmark response');
       setResult(res);
-    } catch { /* ignore */ }
+    } catch (e: any) {
+      setError(e?.message ?? 'Benchmark request failed');
+    }
     setIsLoading(false);
   };
-
-  const maxBar = result ? Math.max(result.falkordb_time_ms, result.vector_rag_time_ms) : 1;
 
   return (
     <div className="flex-1 h-full overflow-y-auto grid-bg">
@@ -34,23 +59,23 @@ export const BenchmarkView: React.FC<BenchmarkViewProps> = ({ entrypoint }) => {
           <div className="flex items-center gap-2">
             <h1 className="text-lg font-bold text-slate-100 font-mono flex items-center gap-2">
               <span className="text-amber-400">⚡</span>
-              FalkorDB vs Vector RAG Benchmark
+              Graph Traversal vs Vector RAG
             </h1>
-            <span className="badge badge-critical ml-2">FalkorDB Rule #3</span>
           </div>
           <p className="text-sm text-slate-500 max-w-2xl">
-            Native Cypher graph traversal with <code className="text-amber-400/80 text-[11px]">shortestPath()</code> outperforms Vector RAG for multi-hop IAM chain discovery by orders of magnitude.
+            The graph side runs <code className="text-amber-400/80 text-[11px]">shortestPath()</code> live on the active engine (median of 20 runs).
+            The vector side is a labelled simulation of retrieval over per-policy text chunks; its latency is not measured.
           </p>
         </div>
 
         {/* Why this matters */}
         <div className="animate-fade-up animate-fade-up-1 glass rounded-2xl p-5 space-y-3">
-          <h2 className="text-[12px] uppercase tracking-widest text-slate-500 font-mono">Why FalkorDB Wins for IAM Graph Analysis</h2>
+          <h2 className="text-[12px] uppercase tracking-widest text-slate-500 font-mono">Why a Graph Fits IAM Path Analysis</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
-              { icon: '⬡', title: 'Native Graph Traversal', desc: 'shortestPath() directly follows relationship edges — no embedding overhead, no retrieval guesswork.' },
-              { icon: '⚡', title: 'Sub-millisecond Latency', desc: 'Graph queries on FalkorDB return in <1ms for 161-node IAM topologies. Vector RAG requires embedding + ANN search.' },
-              { icon: '⊛', title: 'Multi-hop Precision', desc: 'Transitive privilege paths of 5+ hops are exact on a graph. Vector cosine similarity degrades with path length.' },
+              { icon: '⬡', title: 'Native Graph Traversal', desc: 'shortestPath() directly follows relationship edges — no embedding step and no top-k retrieval cut-off.' },
+              { icon: '⏱', title: 'Measured Latency', desc: 'Graph query time is measured on each run and shown below. No vector latency is claimed.' },
+              { icon: '⊛', title: 'Multi-hop Precision', desc: 'Transitive privilege paths are exact on a graph: every reported hop is an existing edge.' },
             ].map(c => (
               <div key={c.title} className="rounded-xl p-4 space-y-1.5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
                 <div className="text-xl">{c.icon}</div>
@@ -65,71 +90,33 @@ export const BenchmarkView: React.FC<BenchmarkViewProps> = ({ entrypoint }) => {
         <div className="animate-fade-up animate-fade-up-2 flex items-center gap-3">
           <button onClick={run} disabled={isLoading} className="btn btn-attack">
             {isLoading ? (
-              <><span className="w-3 h-3 border border-red-300/40 border-t-red-300 rounded-full animate-spin" /> Benchmarking…</>
+              <><span className="w-3 h-3 border border-red-300/40 border-t-red-300 rounded-full animate-spin" /> Running…</>
             ) : (
-              <>⚡ Run Benchmark ({entrypoint})</>
+              <>⚡ Run Comparison ({entrypoint})</>
             )}
           </button>
+          {error && <span className="text-[11px] font-mono text-red-400">⚠ {error}</span>}
         </div>
 
         {/* Results */}
         {result && (
           <div className="animate-fade-up space-y-6">
-            {/* Speedup hero */}
-            <div
-              className="rounded-2xl p-6 flex flex-col items-center justify-center gap-2 text-center"
-              style={{ background: 'rgba(251,191,36,0.05)', border: '1px solid rgba(251,191,36,0.15)' }}
-            >
-              <div className="text-5xl font-black text-amber-400 font-mono" style={{ textShadow: '0 0 40px rgba(251,191,36,0.5)' }}>
-                {result.speedup}×
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <SideCard side={result.vector_rag} color="#f43f5e" title="Vector RAG" />
+              <SideCard side={result.falkordb} color="#10b981" title="Graph (FalkorDB)" />
+            </div>
+
+            {result.conclusion && (
+              <div className="glass rounded-xl p-4 text-[11px] font-mono text-slate-400">
+                {result.conclusion}
               </div>
-              <div className="text-slate-300 font-semibold">Faster than Vector RAG</div>
-              <div className="text-slate-500 text-[11px] font-mono">
-                {result.falkordb_time_ms}ms (FalkorDB) vs {result.vector_rag_time_ms}ms (Vector RAG)
+            )}
+
+            {result.speedup_factor != null && (
+              <div className="text-[11px] font-mono text-slate-500">
+                Speedup factor reported by backend: {result.speedup_factor}×
               </div>
-            </div>
-
-            {/* Bar comparison */}
-            <div className="glass rounded-2xl p-5 space-y-4">
-              <h2 className="text-[11px] uppercase tracking-widest text-slate-500 font-mono">Latency Comparison</h2>
-
-              {[
-                { label: 'FalkorDB shortestPath()', ms: result.falkordb_time_ms, color: '#10b981', glow: 'rgba(16,185,129,0.3)', badge: 'badge-ok', tag: 'Winner' },
-                { label: 'Vector RAG (cosine sim)', ms: result.vector_rag_time_ms, color: '#f43f5e', glow: 'rgba(244,63,94,0.3)', badge: 'badge-critical', tag: 'Loser' },
-              ].map(row => (
-                <div key={row.label} className="space-y-2">
-                  <div className="flex items-center justify-between text-[11px] font-mono">
-                    <div className="flex items-center gap-2">
-                      <span className="text-slate-300">{row.label}</span>
-                      <span className={`badge ${row.badge}`}>{row.tag}</span>
-                    </div>
-                    <span className="font-bold text-slate-200">{row.ms}ms</span>
-                  </div>
-                  <div className="h-2.5 rounded-full overflow-hidden bg-white/5">
-                    <div
-                      className="h-full rounded-full transition-all duration-700"
-                      style={{
-                        width: `${(row.ms / maxBar) * 100}%`,
-                        background: row.color,
-                        boxShadow: `0 0 12px ${row.glow}`,
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Cypher used */}
-            <div className="space-y-2">
-              <h2 className="text-[11px] uppercase tracking-widest text-slate-500 font-mono">Cypher Query Executed</h2>
-              <pre className="code-block whitespace-pre-wrap">{result.falkordb_cypher}</pre>
-            </div>
-
-            <div className="glass rounded-xl p-4 text-[11px] font-mono text-slate-500 space-y-1">
-              <div>· Path length: <span className="text-cyan-400">{result.falkordb_path_length} hops</span></div>
-              <div>· Method: <span className="text-amber-400">Native Cypher allShortestPaths()</span> traversal on FalkorDB adjacency list</div>
-              <div>· Vector RAG simulated: embedding lookup + cosine ANN search over node descriptions (mock)</div>
-            </div>
+            )}
           </div>
         )}
       </div>
