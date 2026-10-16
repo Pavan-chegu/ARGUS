@@ -10,7 +10,7 @@
 **Screen:** Dashboard (home tab, full-screen app)
 
 **Narration:**
-> "Your cloud has 174 IAM identities, 244 permission edges, and somewhere inside
+> "This synthetic cloud has 154 IAM entities and 207 permission edges, and somewhere inside
 > that graph there is a path that lets a low-privilege developer intern reach your
 > production KMS key — your Crown Jewel. Finding it with a Vector RAG chatbot is
 > slow, hallucination-prone, and can't follow transitive trust.
@@ -30,12 +30,12 @@
 > Watch the right panel: each hop is a deliberate decision logged into FalkorDB as AgentMemory."
 
 *Let the attack animation run. Call out 2–3 interesting hops as they appear:*
-- "DevIntern is a member of the DataAccessRole…"
-- "DataAccessRole has a policy that can assume ProductionRole…"
-- "ProductionRole can access ProdKMSKey — Crown Jewel reached."
+- "DevIntern can assume CIRunnerRole (sts:AssumeRole)…"
+- "CIRunnerRole is the instance profile of BuildEC2, and BuildEC2 can assume BackendAppRole…"
+- "BackendAppRole can read ProdCustomerVault: Crown Jewel reached."
 
 **Narration:**
-> "Four hops, 0.44 ms average per query. FalkorDB resolves transitive IAM paths
+> "Four hops, each one a sub-millisecond Cypher query, with the measured time shown on screen. FalkorDB resolves transitive IAM paths
 > in sub-millisecond time — impossible with embedding-based retrieval."
 
 ---
@@ -52,11 +52,14 @@
 *Watch the severed edge disappear from the canvas. The engine re-verifies.*
 
 **Narration:**
-> "FalkorDB now holds memory: a `:Remediation` node linked to the severed relationship.
-> The next Red Team run will recall this, skip the closed path, and either find
-> an alternative route or declare the identity contained."
+> "FalkorDB now holds memory: a `:Remediation` node linked to both ends of the cut edge.
+> The next Red Team run starts by recalling it and checking that the edge is still gone."
 
-*Press "Run Attack" again — show the agent taking a different (or failed) path.*
+*Press "Run Attack" again. Show the recall step ("1 severed edge remembered, verified still absent") and the agent failing to reach the jewel.*
+
+*Optional (drift): re-create the edge in the Cypher Playground, run the attack again, and show the "Regression Detected" step citing the remediation it undoes.*
+
+*Then open the **Decision Trail** tab: Red Team's hops (with scored alternatives) followed by Blue Team's evaluate-cuts and apply decisions, all linked to one incident. Expand the Cypher panel to show the query behind it.*
 
 ---
 

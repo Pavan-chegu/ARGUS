@@ -1,0 +1,26 @@
+# Render Blueprint: one Docker web service (API + UI). FalkorDB runs on FalkorDB Cloud.
+# Render → New → Blueprint → pick this repo, then fill in the secret values it asks for.
+services:
+  - type: web
+    name: argus
+    runtime: docker
+    plan: free
+    region: singapore        # closest Render region to the FalkorDB Cloud instance (aws ap-south-1)
+    healthCheckPath: /health
+    envVars:
+      - key: FALKORDB_HOST
+        sync: false          # e.g. r-xxxx.falkordb.cloud
+      - key: FALKORDB_PORT
+        sync: false
+      - key: FALKORDB_USERNAME
+        sync: false
+      - key: FALKORDB_PASSWORD
+        sync: false
+      - key: GRAPH_NAME
+        value: ArgusCloud
+      - key: LLM_API_KEY
+        sync: false          # Groq key; optional, the graph features work without it
+      - key: LLM_BASE_URL
+        value: https://api.groq.com/openai/v1
+      - key: LLM_MODEL
+        value: llama-3.3-70b-versatile
