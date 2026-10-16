@@ -3,7 +3,7 @@
 **ARGUS finds the permission chains that let a low-privilege cloud identity reach your most sensitive data. It cuts them with the least collateral damage and remembers what it did.**
 A Red Team agent and a Blue Team agent work over an IAM permission graph in FalkorDB. Their memory and every decision they make are stored in the same graph, so any answer can be traced back to the exact nodes, edges and past events behind it.
 
-**Live demo:** _add your deployment URL here_ · **Demo video:** _add link_ · **Tracks:** Agents That Act on Connected Data · Agent Memory and Coordination
+**Live demo:** https://argus-cknt.onrender.com (free tier: the first load after idle can take ~1 min) · **Demo video:** _add link_ · **Tracks:** Agents That Act on Connected Data · Agent Memory and Coordination
 
 ---
 
