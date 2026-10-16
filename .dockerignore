@@ -10,7 +10,4 @@ frontend/node_modules/
 frontend/dist/
 frontend/.vite/
 tests/
-_backup_*/
-NEXT_SESSION_HANDOFF.md
-SESSION_HANDOFF.md
-PROTOTYPE_NOT_FOR_SUBMISSION.md
+*HANDOFF*.md

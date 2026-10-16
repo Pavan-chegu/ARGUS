@@ -568,7 +568,7 @@ class FalkorClient:
         runtime = float(getattr(res, "run_time_ms", 0.0) or (time.perf_counter() - t0) * 1000.0)
         return QueryResult(result_set=res.result_set, header=getattr(res, "header", []), runtime_ms=runtime)
 
-    # Back-compat delegations
+    # Convenience delegations to the engine
     def compute_blast_radius(self, node_identifier: str, max_hops: int = 4):
         return self.engine.compute_blast_radius(node_identifier, max_hops)
 

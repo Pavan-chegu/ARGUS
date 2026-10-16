@@ -72,7 +72,7 @@ class RedTeamAgent:
     backtrack instead of a missed finding. The result is checked against the
     engine's shortestPath ground truth.
     """
-    AGENT_ID = "red_team_v2"
+    AGENT_ID = "red_team"
     MAX_EXPANSIONS = 60
 
     def __init__(self, client=None):

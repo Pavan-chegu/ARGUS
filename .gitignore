@@ -3,13 +3,12 @@
 node_modules/
 .llm_cache/
 __pycache__/
-_backup_*/
 .pytest_cache/
 frontend/node_modules/
 frontend/dist/
 *.pyc
 .agents/
-NEXT_SESSION_HANDOFF.md
+*HANDOFF*.md
 .coverage
 *.log
 .DS_Store

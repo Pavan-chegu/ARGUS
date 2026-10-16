@@ -84,7 +84,7 @@ class BlueTeamAgent:
     carries the most surviving paths, as counted by FalkorDB. The fix is verified with a fresh
     shortestPath query after applying it. Remediations and decisions are stored as graph nodes.
     """
-    AGENT_ID = "blue_team_v2"
+    AGENT_ID = "blue_team"
     GREEDY_MAX_EDGES = 25
 
     def __init__(self, client=None):

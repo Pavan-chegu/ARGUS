@@ -322,8 +322,8 @@ async def get_agent_memory(entrypoint: str):
     """Returns all incidents stored in FalkorDB for a given entrypoint identity."""
     incidents = falkor_client.recall_incidents(entrypoint=entrypoint, limit=10)
     remediations = falkor_client.engine.recall_remediations()
-    red_memory = falkor_client.recall_agent_memory("red_team_v2")
-    blue_memory = falkor_client.recall_agent_memory("blue_team_v2")
+    red_memory = falkor_client.recall_agent_memory("red_team")
+    blue_memory = falkor_client.recall_agent_memory("blue_team")
     return {
         "entrypoint": entrypoint,
         "incident_count": len(incidents),

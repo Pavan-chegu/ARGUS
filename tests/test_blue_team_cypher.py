@@ -17,7 +17,7 @@ from backend.agents.blue_team import BlueTeamAgent  # noqa: E402
 pytestmark = pytest.mark.skipif(not falkor_client.is_live, reason="FalkorDB not reachable")
 
 PLANTED = ["DevIntern", "Contractor", "SupportUser"]
-# entrypoint -> (cut edge chosen by the old Python min-cut on the seeded graph, crown jewel)
+# entrypoint -> (expected cut edge on the seeded graph, crown jewel)
 EXPECTED_CUT = {
     "DevIntern": (("BackendAppRole", "ProdCustomerVault"), "ProdCustomerVault"),
     "Contractor": (("KMSDecryptPolicy", "ProdKMSKey"), "ProdKMSKey"),

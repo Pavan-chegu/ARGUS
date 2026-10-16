@@ -31,7 +31,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="ARGUS — Autonomous IAM Exposure Analyzer",
     description="Multi-hop IAM privilege-escalation analysis with agents whose memory and decisions live in FalkorDB",
-    version="2.1.0",
+    version="1.0.0",
     lifespan=lifespan
 )
 
@@ -70,7 +70,7 @@ def info():
         "status": "online" if falkor_client.is_live else "degraded",
         "engine": falkor_client.live.ENGINE_NAME if falkor_client.is_live else "none",
         "mode": falkor_client.mode,
-        "version": "2.1.0",
+        "version": "1.0.0",
         "features": ["autonomous_agent_swarm", "graph_rag", "episodic_memory", "triage", "mcp_server"],
         "docs": "/docs"
     }
