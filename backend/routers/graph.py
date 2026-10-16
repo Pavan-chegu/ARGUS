@@ -49,7 +49,8 @@ def reseed_graph() -> Dict[str, Any]:
 @router.post("/cypher")
 def run_cypher_playground(req: CypherQueryRequest) -> Dict[str, Any]:
     try:
-        res = falkor_client.query(req.query, req.params)
+        # Public playground: read-only, enforced by FalkorDB (GRAPH.RO_QUERY)
+        res = falkor_client.query(req.query, req.params, read_only=True)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     return {

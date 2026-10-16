@@ -11,6 +11,7 @@ and stores the agents' episodic + procedural memory as graph nodes.
 """
 import json
 import time
+import uuid
 import logging
 from collections import deque
 from typing import Any, Dict, List, Optional, Tuple
@@ -27,6 +28,78 @@ ATTACK_REL_TYPES = ["MEMBER_OF", "HAS_POLICY", "CAN_ASSUME", "ATTACHED_TO", "CAN
 ATTACK_RELS = "|".join(ATTACK_REL_TYPES)
 INFRA_LABELS = ["User", "Role", "Policy", "Compute", "Resource"]
 NODE_PROJ = "{{id: coalesce({v}.id, {v}.name), label: labels({v})[0], properties: properties({v})}}"
+# Labels that hold agent memory / provenance — never part of the IAM topology.
+MEMORY_LABELS = ["Incident", "AgentMemory", "Remediation", "Decision"]
+
+
+def NOT_MEMORY(v: str) -> str:
+    return " AND ".join(f"NOT {v}:{l}" for l in MEMORY_LABELS)
+
+
+def INFRA_MATCH(v: str) -> str:
+    return "(" + " OR ".join(f"{v}:{l}" for l in INFRA_LABELS) + ")"
+
+
+# ── Cypher for remediation memory and decision provenance (module-level so it can be displayed) ──
+REMEDIATION_LINK_CYPHER = (
+    "MATCH (r:Remediation {id: $rid}) "
+    "OPTIONAL MATCH (s) WHERE s.name = $s AND " + INFRA_MATCH("s") + " "
+    "OPTIONAL MATCH (d) WHERE d.name = $d AND " + INFRA_MATCH("d") + " "
+    "FOREACH (_ IN CASE WHEN s IS NULL THEN [] ELSE [1] END | CREATE (r)-[:SEVERED_FROM]->(s)) "
+    "FOREACH (_ IN CASE WHEN d IS NULL THEN [] ELSE [1] END | CREATE (r)-[:SEVERED]->(d))"
+)
+ACTIVE_REMEDIATIONS_CYPHER = (
+    "MATCH (s)<-[:SEVERED_FROM]-(r:Remediation)-[:SEVERED]->(d) "
+    "WHERE coalesce(r.status, 'applied') <> 'reverted' "
+    "RETURN s.name, d.name, r.id, r.type"
+)
+EDGES_PRESENT_CYPHER = (
+    "UNWIND $pairs AS p "
+    "OPTIONAL MATCH (a)-[r:" + ATTACK_RELS + "]->(b) WHERE a.name = p.s AND b.name = p.d "
+    "RETURN p.s, p.d, count(r)"
+)
+MARK_REVERTED_CYPHER = (
+    "MATCH (r:Remediation) WHERE r.src = $s AND r.dst = $d "
+    "AND coalesce(r.status, 'applied') <> 'reverted' "
+    "SET r.status = 'reverted', r.reverted_at = $t RETURN count(r)"
+)
+RECORD_DECISION_CYPHER = {
+    "create": "CREATE (d:Decision) SET d = $p",
+    "chose": "MATCH (d:Decision {id: $id}) MATCH (n) WHERE n.name = $chosen AND " + INFRA_MATCH("n") + " "
+             "CREATE (d)-[:CHOSE]->(n)",
+    "considered": "MATCH (d:Decision {id: $id}) UNWIND $considered AS c "
+                  "MATCH (n) WHERE n.name = c.name AND " + INFRA_MATCH("n") + " "
+                  "CREATE (d)-[:CONSIDERED {score: c.score}]->(n)",
+    "informed_by": "MATCH (d:Decision {id: $id}) UNWIND $ids AS mid "
+                   "MATCH (m) WHERE m.id = mid AND (m:Incident OR m:Remediation OR m:Decision) "
+                   "CREATE (d)-[:INFORMED_BY]->(m)",
+    "next": "MATCH (prev:Decision {run_id: $run_id, step: $prev_step}), (d:Decision {id: $id}) "
+            "WHERE prev.id <> d.id CREATE (prev)-[:NEXT]->(d)",
+}
+LINK_RUN_CYPHER = ("MATCH (i:Incident {id: $iid}) MATCH (d:Decision) WHERE d.run_id = $run_id "
+                   "MERGE (i)-[:HAS_DECISION]->(d)")
+DECISION_TRACE_CYPHER = (
+    "MATCH (d:Decision) WHERE d.run_id = $run_id "
+    "OPTIONAL MATCH (d)-[:CHOSE]->(c) "
+    "OPTIONAL MATCH (d)-[cr:CONSIDERED]->(alt) "
+    "WITH d, c, collect(CASE WHEN alt IS NULL THEN NULL ELSE {name: alt.name, score: cr.score} END) AS considered "
+    "OPTIONAL MATCH (d)-[:INFORMED_BY]->(m) "
+    "WITH d, c, considered, collect(CASE WHEN m IS NULL THEN NULL "
+    "ELSE {id: m.id, label: labels(m)[0], props: properties(m)} END) AS informed "
+    "RETURN properties(d), c.name, considered, informed ORDER BY d.agent_id, d.step"
+)
+
+
+def _memory_summary(label: Optional[str], p: Dict[str, Any]) -> str:
+    if label == "Incident":
+        return (f"Incident {p.get('entrypoint')} -> {p.get('target')} in {p.get('hops')} hops "
+                f"[{p.get('status')}]")
+    if label == "Remediation":
+        return (f"Remediation: severed {p.get('src')} -[{p.get('type')}]-> {p.get('dst')} "
+                f"[{p.get('status') or 'applied'}]")
+    if label == "Decision":
+        return f"Decision step {p.get('step')} ({p.get('agent_id')}): {p.get('action')}"
+    return label or "Node"
 
 
 class QueryResult:
@@ -171,7 +244,7 @@ class LiveGraph(_EngineMixin):
 
     def get_node(self, identifier: str) -> Optional[Dict[str, Any]]:
         rows = self.q(
-            f"MATCH (n) WHERE (n.name = $x OR n.id = $x) AND NOT n:Incident AND NOT n:AgentMemory "
+            f"MATCH (n) WHERE (n.name = $x OR n.id = $x) AND {NOT_MEMORY('n')} "
             f"RETURN {NODE_PROJ.format(v='n')} LIMIT 1", {"x": identifier})
         return self._node(rows[0][0]) if rows else None
 
@@ -181,7 +254,7 @@ class LiveGraph(_EngineMixin):
                 return []
             rows = self.q(f"MATCH (n:{label}) RETURN {NODE_PROJ.format(v='n')} ORDER BY n.name")
         else:
-            rows = self.q(f"MATCH (n) WHERE NOT n:Incident AND NOT n:AgentMemory AND NOT n:Remediation "
+            rows = self.q(f"MATCH (n) WHERE {NOT_MEMORY('n')} "
                           f"RETURN {NODE_PROJ.format(v='n')}")
         return [self._node(r[0]) for r in rows]
 
@@ -248,6 +321,8 @@ class LiveGraph(_EngineMixin):
             raise ValueError(f"Refusing to create unknown relationship type {rel_type}")
         self.q(f"MATCH (a), (b) WHERE a.name = $s AND b.name = $d CREATE (a)-[r:{rel_type}]->(b) SET r = $p",
                {"s": src, "d": dst, "p": properties or {}})
+        # The edge is back, so any remembered remediation of it no longer holds.
+        self.mark_remediation_reverted(src, dst)
 
     # ── cognitive memory (stored as graph nodes) ──
     def store_incident(self, incident: Dict[str, Any]) -> str:
@@ -257,6 +332,7 @@ class LiveGraph(_EngineMixin):
             "hops": incident.get("hops", 0), "path_chain": incident.get("path_chain", []),
             "choke_source": incident.get("choke_source"), "choke_target": incident.get("choke_target"),
             "status": incident.get("status", "active"), "severity": incident.get("severity", "CRITICAL"),
+            "regression": bool(incident.get("regression", False)),
             "timestamp": time.time(),
         }
         self.q("CREATE (i:Incident) SET i = $p", {"p": props})
@@ -284,11 +360,33 @@ class LiveGraph(_EngineMixin):
         rem_id = f"rem_{int(time.time() * 1000)}"
         p = dict(rem, id=rem_id, timestamp=time.time())
         p["edge_properties"] = json.dumps(p.get("edge_properties", {}))
+        p["status"] = p.get("status") or "applied"
         self.q("CREATE (r:Remediation) SET r = $p", {"p": p})
+        # Wire the memory into the topology it changed:
+        #   (r)-[:SEVERED_FROM]->(src)  and  (r)-[:SEVERED]->(dst)
+        # OPTIONAL MATCH + FOREACH so a missing endpoint never fails the write.
+        self.q(REMEDIATION_LINK_CYPHER, {"rid": rem_id, "s": p.get("src"), "d": p.get("dst")})
         if rem.get("incident_id"):
             self.q("MATCH (r:Remediation {id: $rid}), (i:Incident {id: $iid}) CREATE (i)-[:REMEDIATED_BY]->(r)",
                    {"rid": rem_id, "iid": rem["incident_id"]})
         return rem_id
+
+    def mark_remediation_reverted(self, src: str, dst: str) -> int:
+        """Flags every still-applied Remediation of src->dst as reverted. Returns how many changed."""
+        rows = self.q(MARK_REVERTED_CYPHER, {"s": src, "d": dst, "t": time.time()})
+        return rows[0][0] if rows else 0
+
+    def edges_present(self, pairs: List[Tuple[str, str]]) -> Dict[Tuple[str, str], bool]:
+        """Existence check for each (src, dst) pair — one UNWIND query for all pairs."""
+        if not pairs:
+            return {}
+        rows = self.q(EDGES_PRESENT_CYPHER, {"pairs": [{"s": s, "d": d} for s, d in pairs]})
+        return {(r[0], r[1]): r[2] > 0 for r in rows}
+
+    def active_remediated_edges(self) -> List[Dict[str, Any]]:
+        """Edges severed by the Blue Team and not reverted, read through the graph links."""
+        rows = self.q(ACTIVE_REMEDIATIONS_CYPHER)
+        return [{"src": r[0], "dst": r[1], "id": r[2], "type": r[3]} for r in rows if r[0] and r[1]]
 
     def recall_remediations(self, src: Optional[str] = None, dst: Optional[str] = None) -> List[Dict[str, Any]]:
         rows = self.q("MATCH (r:Remediation) WHERE ($s IS NULL OR r.src = $s) AND ($d IS NULL OR r.dst = $d) "
@@ -318,9 +416,91 @@ class LiveGraph(_EngineMixin):
         return out
 
     def memory_stats(self) -> Dict[str, int]:
-        rows = self.q("MATCH (n) WHERE n:Incident OR n:AgentMemory OR n:Remediation "
+        rows = self.q("MATCH (n) WHERE n:Incident OR n:AgentMemory OR n:Remediation OR n:Decision "
                       "RETURN labels(n)[0], count(n)")
         return {r[0]: r[1] for r in rows}
+
+    # ── decision provenance ──
+    def _ensure_decision_indexes(self):
+        if getattr(self, "_decision_idx", False):
+            return
+        for prop in ("id", "run_id"):
+            try:
+                self.q(f"CREATE INDEX FOR (d:Decision) ON (d.{prop})")
+            except Exception:
+                pass  # index already exists
+        self._decision_idx = True
+
+    def record_decision(self, agent_id: str, run_id: str, step: int, action: str, reason: str,
+                        chosen: Optional[str] = None, considered: Optional[List[Dict[str, Any]]] = None,
+                        informed_by: Optional[List[str]] = None, score: Optional[float] = None) -> str:
+        """Creates (:Decision {id, agent_id, run_id, step, action, reason, score, ts}).
+        chosen: node name -> (d)-[:CHOSE]->(n)
+        considered: [{"name": str, "score": float}] -> (d)-[:CONSIDERED {score}]->(n)
+        informed_by: ids of Incident/Remediation/Decision nodes -> (d)-[:INFORMED_BY]->(m)
+        Links (prev Decision with same run_id, step-1)-[:NEXT]->(d). Returns decision id."""
+        self._ensure_decision_indexes()
+        dec_id = f"dec_{uuid.uuid4().hex[:12]}"
+        p = {"id": dec_id, "agent_id": agent_id, "run_id": run_id, "step": int(step),
+             "action": action, "reason": reason, "ts": time.time()}
+        if score is not None:
+            p["score"] = float(score)
+        self.q(RECORD_DECISION_CYPHER["create"], {"p": p})
+        if chosen:
+            self.q(RECORD_DECISION_CYPHER["chose"], {"id": dec_id, "chosen": chosen})
+        cons = [{"name": c["name"], "score": float(c.get("score") or 0.0)}
+                for c in (considered or []) if c.get("name")]
+        if cons:
+            self.q(RECORD_DECISION_CYPHER["considered"], {"id": dec_id, "considered": cons})
+        ids = [i for i in (informed_by or []) if i]
+        if ids:
+            self.q(RECORD_DECISION_CYPHER["informed_by"], {"id": dec_id, "ids": ids})
+        if int(step) > 0:
+            self.q(RECORD_DECISION_CYPHER["next"], {"run_id": run_id, "prev_step": int(step) - 1, "id": dec_id})
+        return dec_id
+
+    def link_run_to_incident(self, run_id: str, incident_id: str) -> None:
+        """(:Incident {id})-[:HAS_DECISION]->(d) for every Decision with that run_id."""
+        self.q(LINK_RUN_CYPHER, {"iid": incident_id, "run_id": run_id})
+
+    def latest_incident_id(self, entrypoint: str) -> Optional[str]:
+        """Most recent Incident for this entrypoint that has a decision trace attached."""
+        rows = self.q("MATCH (i:Incident)-[:HAS_DECISION]->(:Decision) WHERE i.entrypoint = $ep "
+                      "RETURN DISTINCT i.id, i.timestamp ORDER BY i.timestamp DESC LIMIT 1", {"ep": entrypoint})
+        return rows[0][0] if rows else None
+
+    def get_decision_trace(self, run_id: Optional[str] = None, incident_id: Optional[str] = None) -> Dict[str, Any]:
+        """{"run_id", "incident_id", "decisions": [...ordered by agent then step], "cypher"}."""
+        run_ids: List[str] = [run_id] if run_id else []
+        if not run_id and incident_id:
+            # An incident collects every run linked to it: the red-team run that found it,
+            # then the blue-team runs that planned and applied its remediation.
+            rows = self.q("MATCH (i:Incident {id: $iid})-[:HAS_DECISION]->(d:Decision) "
+                          "RETURN d.run_id, min(d.ts) AS started ORDER BY started", {"iid": incident_id})
+            run_ids = [r[0] for r in rows if r[0]]
+            run_id = run_ids[0] if run_ids else None
+        elif run_id and not incident_id:
+            rows = self.q("MATCH (i:Incident)-[:HAS_DECISION]->(d:Decision) WHERE d.run_id = $run_id "
+                          "RETURN i.id LIMIT 1", {"run_id": run_id})
+            incident_id = rows[0][0] if rows else None
+        decisions: List[Dict[str, Any]] = []
+        for rid in run_ids:
+            for props, chosen, considered, informed in self.q(DECISION_TRACE_CYPHER, {"run_id": rid}):
+                d = dict(props)
+                cons = [{"name": dict(c).get("name"), "score": dict(c).get("score")} for c in (considered or [])]
+                cons.sort(key=lambda c: -(c["score"] or 0))
+                inf = []
+                for m in informed or []:
+                    m = dict(m)
+                    inf.append({"id": m.get("id"), "label": m.get("label"),
+                                "summary": _memory_summary(m.get("label"), dict(m.get("props") or {}))})
+                decisions.append({
+                    "id": d.get("id"), "agent_id": d.get("agent_id"), "step": d.get("step"),
+                    "action": d.get("action"), "reason": d.get("reason"), "score": d.get("score"),
+                    "ts": d.get("ts"), "chosen": chosen, "considered": cons, "informed_by": inf,
+                })
+        return {"run_id": run_id, "incident_id": incident_id, "decisions": decisions,
+                "cypher": DECISION_TRACE_CYPHER}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -329,9 +509,12 @@ class FalkorClient:
         self.driver = None
         self.graph = None
         self.live: Optional[LiveGraph] = None
+        self._last_attempt = 0.0
+        self.on_connect = None  # set by main.py: seeds an empty graph after a late connection
         self._connect()
 
     def _connect(self):
+        self._last_attempt = time.monotonic()
         try:
             from falkordb import FalkorDB
             args = {"host": settings.FALKORDB_HOST, "port": settings.FALKORDB_PORT}
@@ -348,11 +531,22 @@ class FalkorClient:
             logger.error(f"Could not connect to FalkorDB ({e}). Service will return HTTP 503 until FalkorDB is reachable.")
             self.live = None
 
+    def _ensure_connected(self) -> None:
+        """Retry the connection (at most every 5 s) so a late-starting FalkorDB is picked up."""
+        if self.live is None and time.monotonic() - self._last_attempt > 5.0:
+            self._connect()
+            if self.live is not None and self.on_connect:
+                try:
+                    self.on_connect()
+                except Exception as e:
+                    logger.error(f"on_connect hook failed: {e}")
+        if self.live is None:
+            raise FalkorUnavailable("FalkorDB is not connected")
+
     @property
     def engine(self) -> LiveGraph:
         """The active graph engine. Raises FalkorUnavailable when FalkorDB is down."""
-        if self.live is None:
-            raise FalkorUnavailable("FalkorDB is not connected")
+        self._ensure_connected()
         return self.live
 
     @property
@@ -363,12 +557,14 @@ class FalkorClient:
     def mode(self) -> str:
         return "live" if self.live is not None else "down"
 
-    def query(self, cypher: str, params: Optional[Dict[str, Any]] = None) -> QueryResult:
-        """Raw Cypher. Raises FalkorUnavailable when not connected."""
-        if self.live is None:
-            raise FalkorUnavailable("FalkorDB is not connected")
+    def query(self, cypher: str, params: Optional[Dict[str, Any]] = None,
+              read_only: bool = False) -> QueryResult:
+        """Raw Cypher. Raises FalkorUnavailable when not connected.
+        read_only uses GRAPH.RO_QUERY, so FalkorDB itself rejects any write."""
+        self._ensure_connected()
         t0 = time.perf_counter()
-        res = self.graph.query(cypher, params or {})
+        run = self.graph.ro_query if read_only else self.graph.query
+        res = run(cypher, params or {})
         runtime = float(getattr(res, "run_time_ms", 0.0) or (time.perf_counter() - t0) * 1000.0)
         return QueryResult(result_set=res.result_set, header=getattr(res, "header", []), runtime_ms=runtime)
 
@@ -394,8 +590,24 @@ class FalkorClient:
     def recall_agent_memory(self, agent_id):
         return self.engine.recall_agent_memory(agent_id)
 
+    def record_decision(self, *args, **kwargs) -> str:
+        return self.engine.record_decision(*args, **kwargs)
+
+    def link_run_to_incident(self, run_id: str, incident_id: str) -> None:
+        self.engine.link_run_to_incident(run_id, incident_id)
+
+    def get_decision_trace(self, run_id=None, incident_id=None):
+        return self.engine.get_decision_trace(run_id, incident_id)
+
+    def mark_remediation_reverted(self, src: str, dst: str) -> int:
+        return self.engine.mark_remediation_reverted(src, dst)
+
     def health_check(self) -> Dict[str, Any]:
         t0 = time.perf_counter()
+        try:
+            self._ensure_connected()
+        except FalkorUnavailable:
+            pass
         if self.live is None:
             return {"status": "down", "mode": "down", "engine": "none",
                     "graph_name": settings.GRAPH_NAME,

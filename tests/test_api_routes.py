@@ -9,11 +9,11 @@ client = TestClient(app)
 def setup_api_seed():
     seed_database(force=True)
 
-def test_root_endpoint():
-    response = client.get("/")
+def test_info_endpoint():
+    response = client.get("/api/info")
     assert response.status_code == 200
     data = response.json()
-    assert data["app"] == "Argus CloudMesh Engine"
+    assert data["app"] == "ARGUS"
     assert data["status"] == "online"
 
 def test_health_endpoint():
@@ -82,3 +82,11 @@ def test_benchmark_compare_endpoint():
     assert "falkordb" in data
     assert data["falkordb"]["traversal_capable"] is True
     assert data["vector_rag"]["traversal_capable"] is False
+
+def test_cypher_playground_is_read_only():
+    ok = client.post("/api/graph/cypher", json={"query": "MATCH (u:User) RETURN count(u)"})
+    assert ok.status_code == 200
+    write = client.post("/api/graph/cypher", json={"query": "MATCH (u:User {name: 'DevIntern'}) DETACH DELETE u"})
+    assert write.status_code == 400
+    still = client.post("/api/graph/cypher", json={"query": "MATCH (u:User {name: 'DevIntern'}) RETURN count(u)"})
+    assert still.json()["result_set"][0][0] == 1

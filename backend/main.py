@@ -1,8 +1,10 @@
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from backend.db.falkor import falkor_client, FalkorUnavailable
 from backend.db.seed_data import seed_database
 from backend.routers.graph import router as graph_router
@@ -12,6 +14,7 @@ from backend.routers.rag import router as rag_router
 from backend.routers.swarm import router as swarm_router
 from backend.routers.triage import router as triage_router
 from backend.routers.agent import router as agent_router
+from backend.routers.trace import router as trace_router
 from backend.mcp_server import mcp_app
 
 logging.basicConfig(level=logging.INFO)
@@ -21,11 +24,13 @@ logger = logging.getLogger("argus-main")
 async def lifespan(app: FastAPI):
     logger.info("Initializing Argus CloudMesh FastAPI Backend...")
     seed_database(force=False)  # keep persisted FalkorDB state across restarts
+    # If FalkorDB comes up after the backend, seed it on the first successful reconnect
+    falkor_client.on_connect = lambda: seed_database(force=False)
     yield
 
 app = FastAPI(
-    title="Argus CloudMesh — Autonomous IAM Attack Pathfinder",
-    description="Sub-millisecond multi-hop IAM privilege escalation hunter powered by FalkorDB Graph Engine",
+    title="ARGUS — Autonomous IAM Exposure Analyzer",
+    description="Multi-hop IAM privilege-escalation analysis with agents whose memory and decisions live in FalkorDB",
     version="2.1.0",
     lifespan=lifespan
 )
@@ -52,15 +57,16 @@ app.include_router(rag_router)
 app.include_router(swarm_router)
 app.include_router(triage_router)
 app.include_router(agent_router)
+app.include_router(trace_router)
 
 # MCP server (SSE) — available at /mcp when mcp package is installed
 if mcp_app is not None:
     app.mount("/mcp", mcp_app)
 
-@app.get("/")
-def root():
+@app.get("/api/info")
+def info():
     return {
-        "app": "Argus CloudMesh Engine",
+        "app": "ARGUS",
         "status": "online" if falkor_client.is_live else "degraded",
         "engine": falkor_client.live.ENGINE_NAME if falkor_client.is_live else "none",
         "mode": falkor_client.mode,
@@ -72,3 +78,16 @@ def root():
 @app.get("/health")
 def health():
     return falkor_client.health_check()
+
+# Built frontend (Docker image / `npm run build`) served from the same origin as the API.
+# Registered last so every /api, /mcp, /docs and /health route takes precedence.
+_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+if _DIST.is_dir():
+    app.mount("/assets", StaticFiles(directory=_DIST / "assets"), name="assets")
+
+    @app.get("/{path:path}", include_in_schema=False)
+    def spa(path: str):
+        f = _DIST / path
+        if path and f.is_file() and _DIST in f.resolve().parents:
+            return FileResponse(f)
+        return FileResponse(_DIST / "index.html")
