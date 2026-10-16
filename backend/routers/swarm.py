@@ -48,15 +48,15 @@ _VECTOR_RAG_WRONG_ANSWERS = {
                           "Each hop is a separate policy document. Cosine similarity finds no single document mentioning all nodes.",
     },
     "Contractor": {
-        "answer": "Contractor has AttachPolicyPermissions policy but no direct KMS access.",
+        "answer": "Contractor has the AttachPolicyPermissions policy but no direct KMS access.",
         "reasoning": "Vector index search returned top-3 policy chunks for Contractor. "
                      "None reference ProdKMSKey directly. Verdict: SAFE.",
         "confidence": 0.87,
         "documents_searched": 847,
         "result": "SAFE — No Crown Jewel access found",
         "is_wrong": True,
-        "failure_reason": "Missed 3-hop chain: Contractor→AttachPolicyPermissions→AdminRole→ProdKMSKey. "
-                          "AttachPolicyPermissions and AdminRole are in different embedding chunks.",
+        "failure_reason": "Missed 3-hop chain: Contractor→AdminRole→KMSDecryptPolicy→ProdKMSKey. "
+                          "The iam:UpdateAssumeRolePolicy grant and AdminRole's KMS policy are in different embedding chunks.",
     },
     "SupportUser": {
         "answer": "SupportUser is a customer-facing role with Lambda access only.",
@@ -66,8 +66,8 @@ _VECTOR_RAG_WRONG_ANSWERS = {
         "documents_searched": 847,
         "result": "SAFE — No Crown Jewel access found",
         "is_wrong": True,
-        "failure_reason": "Missed 4-hop chain: SupportUser→SupportLambda→PassRolePolicy→DynamoDBReaderRole→CrownJewelDB. "
-                          "PassRolePolicy is the hidden escalation link invisible to embedding-based search.",
+        "failure_reason": "Missed 4-hop chain: SupportUser→SupportOpsRole→SupportLambda→DynamoDBReaderRole→CrownJewelDB. "
+                          "The iam:PassRole grant on the Lambda is the hidden escalation link invisible to embedding-based search.",
     },
 }
 
@@ -112,7 +112,7 @@ async def swarm_stream(entrypoint: str, run_comparison: bool) -> AsyncGenerator[
     if run_comparison:
         await asyncio.sleep(0.2)
         yield await emit("vector_start", {
-            "message": f"🔍 Vector RAG Agent: Searching 847 IAM policy embeddings for '{entrypoint}'…",
+            "message": f"🔍 [SIMULATED baseline] Vector RAG agent: scripted top-k policy-chunk search for '{entrypoint}'…",
             "agent": "vector_rag",
             "phase": "searching",
         })

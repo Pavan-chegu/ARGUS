@@ -50,7 +50,7 @@ QUESTION_INTENTS = [
     {
         "keywords": ["policy", "policies", "permission", "permissions", "attached", "wildcard"],
         "intent": "policy_exposure",
-        "cypher_description": "MATCH (p:Policy)<-[:HAS_POLICY|ATTACHED_TO]-(n) RETURN p.name, count(n) AS entities_using ORDER BY entities_using DESC LIMIT 10",
+        "cypher_description": "MATCH (p:Policy)<-[:HAS_POLICY]-(n) RETURN p.name, count(n) AS entities_using ORDER BY entities_using DESC LIMIT 10",
     },
     {
         "keywords": ["what", "assets", "resource", "resources", "exposed", "exposure"],

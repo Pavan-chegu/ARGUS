@@ -38,9 +38,17 @@ SCHEMA = """Graph schema (FalkorDB, Cypher):
 Nodes: (:User {name, department, is_compromised}), (:Role {name, trust_policy}),
        (:Policy {name, effect, actions}), (:Compute {name, type, instance_profile}),
        (:Resource {name, type, sensitivity, is_crown_jewel})
-Permission edges (an attacker can traverse these): MEMBER_OF, HAS_POLICY, CAN_ASSUME, ATTACHED_TO, CAN_ACCESS
+Permission edges (attack direction: whoever controls the source can reach the target):
+  (:User)-[:MEMBER_OF]->(:Role)
+  (:User|Role)-[:HAS_POLICY {attachment}]->(:Policy)
+  (:User|Role|Compute)-[:CAN_ASSUME {technique, granted_by}]->(:Role)
+  (:Role)-[:ATTACHED_TO {binding}]->(:Compute)
+  (:Role|Policy|Compute)-[:CAN_ACCESS {permission}]->(:Resource)
 Memory: (:User)-[:TRIGGERED]->(:Incident {entrypoint, target, hops, path_chain, status, timestamp})-[:TARGETED]->(:Resource)
         (:Incident)-[:REMEDIATED_BY]->(:Remediation {src, dst, type, status})
+        (:Remediation)-[:SEVERED_FROM]->(src node), (:Remediation)-[:SEVERED]->(dst node)
+        (:Incident)-[:HAS_DECISION]->(:Decision {agent_id, run_id, step, action, reason, score})-[:CHOSE]->(node)
+        (:Decision)-[:CONSIDERED {score}]->(node), (:Decision)-[:NEXT]->(:Decision), (:Decision)-[:INFORMED_BY]->(:Incident|Remediation)
 Crown jewels: (:Resource {is_crown_jewel: true})
 FalkorDB rule: shortestPath() is only allowed in WITH or RETURN, e.g.
   MATCH (u:User {name:'DevIntern'}), (t:Resource {is_crown_jewel:true})
