@@ -194,7 +194,7 @@ const TeamColumn: React.FC<{ team: TeamKey; decisions: TraceDecision[] }> = ({ t
   const t = TEAM_STYLE[team];
   const agentIds = Array.from(new Set(decisions.map(d => d.agent_id).filter(Boolean)));
   return (
-    <div style={{ flex: 1, minWidth: 320, display: 'flex', flexDirection: 'column' }}>
+    <div style={{ flex: 1, minWidth: 'min(100%, 320px)', display: 'flex', flexDirection: 'column' }}>
       <div style={{
         display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', marginBottom: 12, borderRadius: 10,
         background: t.bg, border: `1px solid ${t.border}`,

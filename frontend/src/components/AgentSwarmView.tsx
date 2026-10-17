@@ -581,7 +581,7 @@ export const AgentSwarmView: React.FC<{ selectedEntrypoint?: string }> = ({ sele
                       : step.is_memory
                         ? 'rgba(139,92,246,0.25)'
                         : colors.border}`,
-                    animation: 'fadeInUp 0.25s ease',
+                    animation: 'fade-up 0.25s ease',
                   }}
                 >
                   {/* Header row */}
@@ -813,15 +813,6 @@ export const AgentSwarmView: React.FC<{ selectedEntrypoint?: string }> = ({ sele
         </div>
       </div>
 
-      <style>{`
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(6px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 };

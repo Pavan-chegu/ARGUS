@@ -4,11 +4,12 @@ import { runCypherPlayground } from '../services/api';
 const PRESET_QUERIES = [
   {
     name: 'Find all attack paths to Crown Jewels',
-    query: `MATCH p = allShortestPaths(
-  (u:User)-[:MEMBER_OF|HAS_POLICY|CAN_ASSUME|ATTACHED_TO|CAN_ACCESS*1..8]->(r:Resource)
-)
-WHERE r.is_crown_jewel = true
-RETURN p LIMIT 10`,
+    query: `MATCH (u:User), (r:Resource {is_crown_jewel: true})
+WITH u, r, shortestPath((u)-[:MEMBER_OF|HAS_POLICY|CAN_ASSUME|ATTACHED_TO|CAN_ACCESS*1..8]->(r)) AS p
+WHERE p IS NOT NULL
+RETURN u.name AS identity, r.name AS crown_jewel, length(p) AS hops,
+       [n IN nodes(p) | n.name] AS path
+ORDER BY hops LIMIT 10`,
   },
   {
     name: 'Most over-privileged identities',
@@ -26,8 +27,9 @@ ORDER BY exposure DESC`,
   {
     name: 'Shortest path: DevIntern → ProdCustomerVault',
     query: `MATCH (u:User {name: 'DevIntern'}), (r:Resource {name: 'ProdCustomerVault'})
-MATCH p = shortestPath((u)-[:MEMBER_OF|HAS_POLICY|CAN_ASSUME|ATTACHED_TO|CAN_ACCESS*1..8]->(r))
-RETURN p`,
+WITH shortestPath((u)-[:MEMBER_OF|HAS_POLICY|CAN_ASSUME|ATTACHED_TO|CAN_ACCESS*1..8]->(r)) AS p
+RETURN length(p) AS hops, [n IN nodes(p) | n.name] AS path,
+       [rel IN relationships(p) | type(rel)] AS edges`,
   },
   {
     name: 'Agent decision trace (Incident → Decision → node)',

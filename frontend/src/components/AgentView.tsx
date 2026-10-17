@@ -281,7 +281,7 @@ export const AgentView: React.FC<{
   const toolCount = log.filter(e => e.event.type === 'tool_call').length;
 
   return (
-    <div className="agent-root" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', background: 'var(--bg-base)' }}>
+    <div className="agent-root" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', background: 'transparent' }}>
       {/* ── Header bar ─── */}
       <div style={{
         flexShrink: 0, padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)',
@@ -606,8 +606,6 @@ export const AgentView: React.FC<{
         )}
       </div>
 
-      {/* ── CSS for spinner ─── */}
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 };

@@ -4,13 +4,24 @@ import { fetchRiskScorecard } from '../services/api';
 interface RiskEntry {
   identity_name: string;
   identity_type: string;
-  blast_radius: number;
-  accessible_critical: number;
+  crown_jewel: string | null;      // crown jewel this identity can reach, if any
   accessible_total: number;
   risk_score: number;
   risk_tier: string;
-  shortest_path_length: number;
+  shortest_path_length: number | null;
 }
+
+// /api/graph/risk-scorecard rows → table rows. The API sends target_jewel as "None"
+// and 0 hops for identities that reach no crown jewel.
+const toEntry = (x: any): RiskEntry => ({
+  identity_name: x.name,
+  identity_type: x.department,
+  crown_jewel: x.target_jewel && x.target_jewel !== 'None' ? x.target_jewel : null,
+  accessible_total: x.blast_radius_resources ?? 0,
+  risk_score: x.risk_score ?? 0,
+  risk_tier: x.risk_level ?? 'LOW',
+  shortest_path_length: x.max_escalation_hops > 0 ? x.max_escalation_hops : null,
+});
 
 const TIER_CONFIG: Record<string, { badge: string; bar: string }> = {
   CRITICAL: { badge: 'badge-critical', bar: '#f43f5e' },
@@ -29,7 +40,7 @@ export const RiskScorecardView: React.FC = () => {
     setError(null);
     try {
       const res = await fetchRiskScorecard();
-      setData(res.identities || []);
+      setData((res.identities || []).map(toEntry));
     } catch {
       setError('Failed to load scorecard. Is the backend running?');
     } finally {
@@ -81,7 +92,7 @@ export const RiskScorecardView: React.FC = () => {
               <table className="w-full text-[12px] font-mono">
                 <thead>
                   <tr className="border-b border-white/5">
-                    {['Rank', 'Identity', 'Type', 'Risk Tier', 'Risk Score', 'Crown Jewels', 'Total Accessible', 'Path Hops'].map(h => (
+                    {['Rank', 'Identity', 'Type', 'Risk Tier', 'Risk Score', 'Crown Jewel Reached', 'Total Accessible', 'Path Hops'].map(h => (
                       <th key={h} className="text-left px-4 py-3 text-[10px] text-slate-500 uppercase tracking-wider font-semibold whitespace-nowrap">
                         {h}
                       </th>
@@ -117,9 +128,9 @@ export const RiskScorecardView: React.FC = () => {
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-amber-400 font-bold">{row.accessible_critical}</td>
+                        <td className="px-4 py-3 text-amber-400 font-bold whitespace-nowrap">{row.crown_jewel ?? <span className="text-slate-600 font-normal">—</span>}</td>
                         <td className="px-4 py-3 text-slate-400">{row.accessible_total}</td>
-                        <td className="px-4 py-3 text-cyan-400">{row.shortest_path_length}</td>
+                        <td className="px-4 py-3 text-cyan-400">{row.shortest_path_length ?? <span className="text-slate-600">—</span>}</td>
                       </tr>
                     );
                   })}

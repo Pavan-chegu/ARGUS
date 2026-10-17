@@ -45,7 +45,7 @@ export const GlobalAuditView: React.FC<GlobalAuditViewProps> = ({
         height: '100%',
         overflowY: 'auto',
         padding: '24px 32px',
-        background: '#040711',
+        background: 'transparent',
         color: '#e2e8f0',
         fontFamily: 'var(--font-sans, sans-serif)',
       }}
@@ -86,7 +86,7 @@ export const GlobalAuditView: React.FC<GlobalAuditViewProps> = ({
 
       {/* Summary KPI Cards */}
       {audit && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24 }}>
+        <div className="stagger" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24 }}>
           <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: '16px 20px' }}>
             <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>
               Total Identities Assessed

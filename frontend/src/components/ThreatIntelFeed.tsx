@@ -150,16 +150,6 @@ export const ThreatIntelFeed: React.FC = () => {
         {events.length} events
       </div>
 
-      <style>{`
-        @keyframes ticker-scroll {
-          0%   { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        @keyframes pulse-feed {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.3; }
-        }
-      `}</style>
     </div>
   );
 };

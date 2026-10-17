@@ -1,21 +1,31 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { Navbar, ActiveTab } from './components/Navbar';
-import { GraphCanvas } from './components/GraphCanvas';
-import { AgentTerminal } from './components/AgentTerminal';
-import { BenchmarkView } from './components/BenchmarkView';
-import { RiskScorecardView } from './components/RiskScorecardView';
-import { CypherPlaygroundView } from './components/CypherPlaygroundView';
-import { GlobalAuditView } from './components/GlobalAuditView';
-import { WhatIfSimulatorView } from './components/WhatIfSimulatorView';
 import { DashboardView } from './components/DashboardView';
 import { ThreatIntelFeed } from './components/ThreatIntelFeed';
-import { CopilotView } from './components/CopilotView';
-import { AgentSwarmView } from './components/AgentSwarmView';
-import { AgentView } from './components/AgentView';
-import { TriageView } from './components/TriageView';
-import { DecisionTrailView } from './components/DecisionTrailView';
 import { JudgeTourModal } from './components/JudgeTourModal';
 import { McpConfigModal } from './components/McpConfigModal';
+
+// Every view except the landing Dashboard is its own chunk, loaded the first time its tab opens
+// (d3 only ships with the Investigate graph).
+const GraphCanvas = lazy(() => import('./components/GraphCanvas').then(m => ({ default: m.GraphCanvas })));
+const AgentTerminal = lazy(() => import('./components/AgentTerminal').then(m => ({ default: m.AgentTerminal })));
+const BenchmarkView = lazy(() => import('./components/BenchmarkView').then(m => ({ default: m.BenchmarkView })));
+const RiskScorecardView = lazy(() => import('./components/RiskScorecardView').then(m => ({ default: m.RiskScorecardView })));
+const CypherPlaygroundView = lazy(() => import('./components/CypherPlaygroundView').then(m => ({ default: m.CypherPlaygroundView })));
+const GlobalAuditView = lazy(() => import('./components/GlobalAuditView').then(m => ({ default: m.GlobalAuditView })));
+const WhatIfSimulatorView = lazy(() => import('./components/WhatIfSimulatorView').then(m => ({ default: m.WhatIfSimulatorView })));
+const CopilotView = lazy(() => import('./components/CopilotView').then(m => ({ default: m.CopilotView })));
+const AgentView = lazy(() => import('./components/AgentView').then(m => ({ default: m.AgentView })));
+const TriageView = lazy(() => import('./components/TriageView').then(m => ({ default: m.TriageView })));
+const DecisionTrailView = lazy(() => import('./components/DecisionTrailView').then(m => ({ default: m.DecisionTrailView })));
+
+const ViewSkeleton: React.FC = () => (
+  <div style={{ flex: 1, padding: 24, display: 'flex', flexDirection: 'column', gap: 12 }} aria-busy="true" aria-label="Loading view">
+    <div className="skeleton" style={{ height: 24, width: 240 }} />
+    <div className="skeleton" style={{ height: 14, width: '60%' }} />
+    <div className="skeleton" style={{ flex: 1, minHeight: 160 }} />
+  </div>
+);
 
 import {
   fetchGraphTopology,
@@ -385,7 +395,7 @@ export const App: React.FC = () => {
           fontFamily: 'var(--font-mono)', fontSize: 11,
         }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#f87171', flexShrink: 0,
-            boxShadow: '0 0 8px #f87171', animation: 'pulse 1.2s ease-in-out infinite' }} />
+            boxShadow: '0 0 8px #f87171', animation: 'pulse-dot 1.2s ease-in-out infinite' }} />
           <span style={{ color: '#fca5a5', fontWeight: 700 }}>FalkorDB OFFLINE</span>
           <span style={{ color: '#94a3b8' }}>Start Docker and run <code style={{ color: '#f1f5f9' }}>docker compose up -d</code> to restore graph connectivity.</span>
           <button
@@ -401,6 +411,9 @@ export const App: React.FC = () => {
 
       {/* ── Main content area ─────── */}
       <div className="app-main">
+        {/* Keyed on the tab so each switch replays the entrance transition. */}
+        <div key={activeTab} className="view-enter">
+        <Suspense fallback={<ViewSkeleton />}>
 
         {/* HOME / DASHBOARD */}
         {(activeTab as string) === 'home' && (
@@ -501,6 +514,8 @@ export const App: React.FC = () => {
         {activeTab === 'benchmark' && <BenchmarkView entrypoint={selectedEntrypoint} />}
         {activeTab === 'scorecard' && <RiskScorecardView />}
         {activeTab === 'playground' && <CypherPlaygroundView />}
+        </Suspense>
+        </div>
       </div>
 
       <StatusBar topology={topology} attackResult={attackResult} isRemediated={isRemediated} isFalkorDown={isFalkorDown} />

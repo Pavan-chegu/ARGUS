@@ -391,7 +391,7 @@ export const AgentTerminal: React.FC<AgentTerminalProps> = ({
                 width: 7, height: 7, borderRadius: '50%',
                 background: isAttacking || isStreamingBlue ? '#fbbf24' : '#10b981',
                 boxShadow: `0 0 8px ${isAttacking || isStreamingBlue ? '#fbbf24' : '#10b981'}`,
-                animation: isAttacking || isStreamingBlue ? 'pulse 1s ease-in-out infinite' : 'none',
+                animation: isAttacking || isStreamingBlue ? 'glow-pulse 1s ease-in-out infinite' : 'none',
               }}
             />
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: '#f1f5f9', letterSpacing: '0.07em' }}>
@@ -793,11 +793,6 @@ export const AgentTerminal: React.FC<AgentTerminalProps> = ({
         </button>
       </div>
 
-      <style>{`
-        @keyframes pulse-opacity { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
-        @keyframes pulse { 0%,100% { box-shadow: 0 0 8px #fbbf24; } 50% { box-shadow: 0 0 18px #fbbf24; } }
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
     </div>
   );
 };

@@ -415,7 +415,7 @@ export const CopilotView: React.FC = () => {
         height: '100%',
         width: '100%',
         overflow: 'hidden',
-        background: 'var(--bg-base)',
+        background: 'transparent',
       }}
     >
       {/* ── Left Sidebar: RAG Architecture & Suggested Questions ── */}

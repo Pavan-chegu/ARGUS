@@ -48,7 +48,7 @@ export const WhatIfSimulatorView: React.FC = () => {
         height: '100%',
         overflowY: 'auto',
         padding: '28px 36px',
-        background: '#040711',
+        background: 'transparent',
         color: '#e2e8f0',
         fontFamily: 'var(--font-sans, sans-serif)',
       }}

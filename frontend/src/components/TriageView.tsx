@@ -97,8 +97,12 @@ export const TriageView: React.FC = () => {
   }) ?? [];
 
   if (loading) return (
-    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#475569', fontFamily: 'var(--font-mono)', fontSize: 13 }}>
-      <span>Scanning permission graph…</span>
+    <div style={{ flex: 1, padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 10 }} aria-busy="true" aria-label="Scanning permission graph">
+      <div className="skeleton" style={{ height: 22, width: 220 }} />
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        {[0, 1, 2, 3, 4].map(i => <div key={i} className="skeleton" style={{ height: 64, width: 120 }} />)}
+      </div>
+      {[0, 1, 2, 3, 4, 5].map(i => <div key={i} className="skeleton" style={{ height: 42, opacity: 1 - i * 0.12 }} />)}
     </div>
   );
 
@@ -127,7 +131,7 @@ export const TriageView: React.FC = () => {
         </div>
 
         {/* Summary cards */}
-        <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+        <div className="stagger" style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
           <SummaryCard label="Critical" count={sc.CRITICAL ?? 0} color="#f87171" />
           <SummaryCard label="High" count={sc.HIGH ?? 0} color="#fbbf24" />
           <SummaryCard label="Medium" count={sc.MEDIUM ?? 0} color="#60a5fa" />

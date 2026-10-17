@@ -131,7 +131,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onStartDemo, onCha
         height: '100%',
         overflowY: 'auto',
         padding: '28px 36px',
-        background: '#040711',
+        background: 'transparent',
         color: '#e2e8f0',
         fontFamily: 'var(--font-sans)',
         position: 'relative',
@@ -157,11 +157,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onStartDemo, onCha
               ⬡
             </div>
             <div>
-              <h1 style={{
-                margin: 0, fontSize: 26, fontWeight: 900,
-                background: 'linear-gradient(135deg, #f43f5e 0%, #fb923c 40%, #06b6d4 100%)',
-                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text', letterSpacing: '-0.03em',
+              <h1 className="text-gradient-brand text-gradient-animated" style={{
+                margin: 0, fontSize: 26, fontWeight: 800, letterSpacing: '-0.03em',
               }}>
                 ARGUS CloudMesh
               </h1>
@@ -252,7 +249,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onStartDemo, onCha
         </div>
 
         {/* Stats grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14, marginBottom: 36 }}>
+        <div className="stagger" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14, marginBottom: 36 }}>
           <StatCard
             value={stats?.total_nodes ?? '…'}
             label="IAM Nodes"
@@ -385,7 +382,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onStartDemo, onCha
             A 3-phase autonomous agent loop powered by FalkorDB graph traversal.
           </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14 }}>
+          <div className="stagger" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14 }}>
             {[
               {
                 step: '01',
@@ -455,9 +452,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onStartDemo, onCha
         </div>
       </div>
 
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
     </div>
   );
 };
