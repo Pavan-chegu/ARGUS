@@ -483,58 +483,6 @@ export const AgentTerminal: React.FC<AgentTerminalProps> = ({
               </div>
             )}
 
-            {/* Link to the recorded decision trail for this run */}
-            {activeResult?.run_id && onViewDecisionTrail && !isAttacking && (
-              <button
-                onClick={() => onViewDecisionTrail(activeResult.run_id as string)}
-                title={`run_id ${activeResult.run_id}`}
-                style={{
-                  alignSelf: 'flex-start', padding: '5px 10px', borderRadius: 7,
-                  background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.3)',
-                  color: '#fbbf24', fontSize: 10.5, fontFamily: 'var(--font-mono)', cursor: 'pointer',
-                }}
-              >
-                ⇣ View decision trail
-              </button>
-            )}
-
-            {/* Blue Team Deploy button */}
-            {canDeployBlue && (
-              <button
-                onClick={runStreamingBlue}
-                style={{
-                  padding: '11px 14px', borderRadius: 10,
-                  border: '1px solid rgba(16,185,129,0.3)',
-                  background: 'linear-gradient(135deg, rgba(16,185,129,0.18), rgba(6,182,212,0.18))',
-                  color: '#34d399', fontWeight: 700, fontSize: 12,
-                  fontFamily: 'var(--font-mono)', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  boxShadow: '0 4px 16px rgba(16,185,129,0.12)',
-                  transition: 'all 200ms',
-                }}
-              >
-                ⊕ Deploy Blue Team Remediator ▶
-              </button>
-            )}
-
-            {/* Fallback — non-streaming deploy button */}
-            {!canDeployBlue && activeResult?.status === 'success' && !activeBlue && !isStreamingBlue && (
-              <button
-                onClick={onRunRemediation}
-                disabled={isRemediating}
-                style={{
-                  padding: '11px 14px', borderRadius: 10,
-                  border: '1px solid rgba(16,185,129,0.3)',
-                  background: 'linear-gradient(135deg, rgba(16,185,129,0.18), rgba(6,182,212,0.18))',
-                  color: '#34d399', fontWeight: 700, fontSize: 12,
-                  fontFamily: 'var(--font-mono)', cursor: isRemediating ? 'not-allowed' : 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                }}
-              >
-                {isRemediating ? 'Analyzing…' : '⊕ Deploy Blue Team Remediator ▶'}
-              </button>
-            )}
-
             {/* No choke point notice */}
             {activeBlue && !activeBlue.choke_point && (
               <div style={{
@@ -761,10 +709,64 @@ export const AgentTerminal: React.FC<AgentTerminalProps> = ({
 
       {/* Footer — Action Buttons */}
       <div style={{
-        flexShrink: 0, padding: '8px 12px',
-        borderTop: '1px solid rgba(255,255,255,0.05)',
-        background: 'rgba(8,14,28,0.9)',
+        flexShrink: 0, padding: '10px 12px',
+        borderTop: '1px solid rgba(255,255,255,0.08)',
+        background: 'rgba(8,14,28,0.98)',
+        display: 'flex', flexDirection: 'column', gap: 8,
       }}>
+        {/* Link to the recorded decision trail for this run */}
+        {activeResult?.run_id && onViewDecisionTrail && !isAttacking && (
+          <button
+            onClick={() => onViewDecisionTrail(activeResult.run_id as string)}
+            title={`run_id ${activeResult.run_id}`}
+            style={{
+              width: '100%', padding: '7px 10px', borderRadius: 8,
+              background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.4)',
+              color: '#fbbf24', fontSize: 11, fontFamily: 'var(--font-mono)', cursor: 'pointer',
+              fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            }}
+          >
+            ⇣ View Decision Trail
+          </button>
+        )}
+
+        {/* Blue Team Deploy button */}
+        {canDeployBlue && (
+          <button
+            onClick={runStreamingBlue}
+            style={{
+              width: '100%', padding: '11px 14px', borderRadius: 10,
+              border: '1px solid rgba(16,185,129,0.4)',
+              background: 'linear-gradient(135deg, rgba(16,185,129,0.25), rgba(6,182,212,0.25))',
+              color: '#34d399', fontWeight: 700, fontSize: 12,
+              fontFamily: 'var(--font-mono)', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              boxShadow: '0 4px 16px rgba(16,185,129,0.18)',
+              transition: 'all 200ms',
+            }}
+          >
+            ⊕ Deploy Blue Team Remediator ▶
+          </button>
+        )}
+
+        {/* Fallback — non-streaming deploy button */}
+        {!canDeployBlue && activeResult?.status === 'success' && !activeBlue && !isStreamingBlue && (
+          <button
+            onClick={onRunRemediation}
+            disabled={isRemediating}
+            style={{
+              width: '100%', padding: '11px 14px', borderRadius: 10,
+              border: '1px solid rgba(16,185,129,0.4)',
+              background: 'linear-gradient(135deg, rgba(16,185,129,0.25), rgba(6,182,212,0.25))',
+              color: '#34d399', fontWeight: 700, fontSize: 12,
+              fontFamily: 'var(--font-mono)', cursor: isRemediating ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}
+          >
+            {isRemediating ? 'Analyzing…' : '⊕ Deploy Blue Team Remediator ▶'}
+          </button>
+        )}
+
         <button
           onClick={runStreamingAttack}
           disabled={isAttacking || isStreamingBlue}
