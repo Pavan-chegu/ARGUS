@@ -42,6 +42,7 @@ export const WhatIfSimulatorView: React.FC = () => {
 
   return (
     <div
+      className="page-pad"
       style={{
         flex: 1,
         height: '100%',
@@ -54,7 +55,7 @@ export const WhatIfSimulatorView: React.FC = () => {
     >
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 6 }}>
           <span style={{ fontSize: 22 }}>🧪</span>
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#f8fafc', letterSpacing: '-0.02em' }}>
             What-If Policy Grant Simulator
@@ -68,7 +69,7 @@ export const WhatIfSimulatorView: React.FC = () => {
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.8fr', gap: 24, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: 24, alignItems: 'start' }}>
         {/* Controls Card */}
         <div
           style={{

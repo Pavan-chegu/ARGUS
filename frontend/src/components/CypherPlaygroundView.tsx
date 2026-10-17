@@ -65,12 +65,12 @@ export const CypherPlaygroundView: React.FC = () => {
 
   return (
     <div className="flex-1 h-full flex flex-col overflow-hidden grid-bg">
-      <div className="flex h-full overflow-hidden">
-        {/* Left: editor */}
-        <div className="flex flex-col w-[55%] border-r border-white/5">
+      <div className="flex flex-col md:flex-row h-full overflow-hidden">
+        {/* Left: editor (top on narrow screens) */}
+        <div className="cypher-editor flex flex-col w-full md:w-[55%] border-b md:border-b-0 md:border-r border-white/5">
           {/* Toolbar */}
           <div className="flex items-center justify-between px-4 h-11 border-b border-white/5 flex-shrink-0 gap-3">
-            <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar">
+            <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar" data-scroll-strip>
               {PRESET_QUERIES.map((p, i) => (
                 <button
                   key={i}
@@ -84,7 +84,7 @@ export const CypherPlaygroundView: React.FC = () => {
           </div>
 
           {/* Editor area */}
-          <div className="flex-1 relative">
+          <div className="cypher-editor-area flex-1 relative">
             <textarea
               value={query}
               onChange={e => setQuery(e.target.value)}
@@ -118,8 +118,8 @@ export const CypherPlaygroundView: React.FC = () => {
           </div>
         </div>
 
-        {/* Right: results */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Right: results (below on narrow screens) */}
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
           <div className="flex items-center justify-between px-4 h-11 border-b border-white/5 flex-shrink-0">
             <span className="text-[10px] font-mono text-slate-600 uppercase tracking-wider">Query Results</span>
             {result && (

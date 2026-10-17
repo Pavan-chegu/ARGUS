@@ -39,6 +39,7 @@ export const GlobalAuditView: React.FC<GlobalAuditViewProps> = ({
 
   return (
     <div
+      className="page-pad"
       style={{
         flex: 1,
         height: '100%',
@@ -50,9 +51,9 @@ export const GlobalAuditView: React.FC<GlobalAuditViewProps> = ({
       }}
     >
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
+        <div style={{ minWidth: 0, flex: '1 1 280px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 6 }}>
             <span style={{ fontSize: 22 }}>🛰️</span>
             <h1 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#f8fafc', letterSpacing: '-0.02em' }}>
               Organization-Wide IAM Swarm Audit
@@ -85,7 +86,7 @@ export const GlobalAuditView: React.FC<GlobalAuditViewProps> = ({
 
       {/* Summary KPI Cards */}
       {audit && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24 }}>
           <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: '16px 20px' }}>
             <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>
               Total Identities Assessed
@@ -137,14 +138,15 @@ export const GlobalAuditView: React.FC<GlobalAuditViewProps> = ({
       )}
 
       {/* Filters & Search */}
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', marginBottom: 16 }}>
         <input
           type="text"
           placeholder="Search by identity name or department…"
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           style={{
-            flex: 1,
+            flex: '1 1 220px',
+            minWidth: 0,
             maxWidth: 360,
             background: 'rgba(255,255,255,0.04)',
             border: '1px solid rgba(255,255,255,0.1)',
@@ -189,10 +191,11 @@ export const GlobalAuditView: React.FC<GlobalAuditViewProps> = ({
           background: 'rgba(8, 14, 28, 0.85)',
           border: '1px solid rgba(255,255,255,0.06)',
           borderRadius: 12,
-          overflow: 'hidden',
+          overflowX: 'auto',
+          overflowY: 'hidden',
         }}
       >
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5, fontFamily: 'var(--font-mono)' }}>
+        <table style={{ width: '100%', minWidth: 640, borderCollapse: 'collapse', fontSize: 11.5, fontFamily: 'var(--font-mono)' }}>
           <thead>
             <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)', textAlign: 'left', color: '#64748b' }}>
               <th style={{ padding: '12px 16px' }}>Identity</th>

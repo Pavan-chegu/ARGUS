@@ -419,11 +419,13 @@ function getSafeNodeMeta(node: any): { id: string; name: string } {
           height: '100%',
           display: 'block',
           cursor: 'grab',
+          touchAction: 'none', // d3.zoom handles pinch/pan; stop the browser zooming the page instead
         }}
       />
 
       {/* Top Left: Legend */}
       <div
+        className="graph-legend"
         style={{
           position: 'absolute',
           top: 16,
@@ -454,6 +456,7 @@ function getSafeNodeMeta(node: any): { id: string; name: string } {
 
       {/* Camera Controls */}
       <div
+        className="graph-controls"
         style={{
           position: 'absolute',
           bottom: 16,
@@ -530,6 +533,7 @@ function getSafeNodeMeta(node: any): { id: string; name: string } {
 
       {/* Bottom Left Info Badge */}
       <div
+        className="graph-info"
         style={{
           position: 'absolute',
           bottom: 16,

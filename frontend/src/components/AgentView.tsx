@@ -281,18 +281,18 @@ export const AgentView: React.FC<{
   const toolCount = log.filter(e => e.event.type === 'tool_call').length;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', background: 'var(--bg-base)' }}>
+    <div className="agent-root" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', background: 'var(--bg-base)' }}>
       {/* ── Header bar ─── */}
       <div style={{
         flexShrink: 0, padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)',
-        display: 'flex', alignItems: 'center', gap: 14, background: 'var(--bg-surface)',
+        display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px 14px', background: 'var(--bg-surface)',
       }}>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color: '#f1f5f9' }}>🤖 ARGUS Agent</span>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#475569' }}>Groq LLaMA 3.3 70B + FalkorDB Graph Memory</span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginLeft: 'auto' }}>
           {/* Identity picker */}
           <label style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#64748b' }}>Identity:</label>
           <select
@@ -389,9 +389,9 @@ export const AgentView: React.FC<{
       )}
 
       {/* ── Body: 2-Column (Agent Log + Cognitive Memory) ─── */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', minHeight: 0 }}>
+      <div className="agent-body" style={{ overflow: 'hidden' }}>
         {/* Left: Stream Log */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 20px', minHeight: 0 }}>
+        <div className="agent-log" style={{ flex: 1, overflowY: 'auto', padding: '12px 20px', minHeight: 0 }}>
           {log.length === 0 && !running && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16, opacity: 0.6 }}>
               <span style={{ fontSize: 48 }}>🤖</span>
@@ -449,9 +449,8 @@ export const AgentView: React.FC<{
         {/* Right: FalkorDB Cognitive Memory Panel */}
         {showMemoryPanel && (
           <div
+            className="agent-memory"
             style={{
-              width: 340,
-              flexShrink: 0,
               borderLeft: '1px solid rgba(255,255,255,0.06)',
               background: '#090d14',
               display: 'flex',

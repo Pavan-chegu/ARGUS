@@ -38,5 +38,6 @@ def trace_latest(entrypoint: str = Query("DevIntern")) -> Dict[str, Any]:
     g = falkor_client.engine
     inc = g.latest_incident_id(entrypoint)
     if not inc:
-        raise HTTPException(status_code=404, detail=f"No traced incident for entrypoint '{entrypoint}'.")
+        # Nothing recorded yet is a normal state for this identity, not a missing resource.
+        return {"run_id": None, "incident_id": None, "decisions": [], "cypher": None}
     return _or_404(g.get_decision_trace(incident_id=inc), f"incident '{inc}'")

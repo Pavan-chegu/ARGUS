@@ -155,3 +155,5 @@ def test_trace_endpoints():
     latest = client.get("/api/trace/latest", params={"entrypoint": ENTRY})
     assert latest.status_code == 200 and latest.json()["incident_id"] == r1["incident_id"]
     assert client.get("/api/trace/run/run_does_not_exist").status_code == 404
+    empty = client.get("/api/trace/latest", params={"entrypoint": "QAEngineer"})
+    assert empty.status_code == 200 and empty.json()["decisions"] == [] and empty.json()["incident_id"] is None

@@ -48,15 +48,24 @@
     background-color: var(--bg-base);
     color: #e2e8f0;
     font-family: var(--font-sans);
+    /* The app is a fixed-height shell; each panel scrolls itself. `clip` (unlike `hidden`)
+       also blocks programmatic scrolling, so focusing an off-screen control can't shift the page. */
     overflow: hidden;
+    overflow: clip;
     height: 100dvh;
-    width: 100dvw;
+    width: 100%;
   }
 
   #root {
     height: 100dvh;
-    width: 100dvw;
+    width: 100%;
     overflow: hidden;
+    overflow: clip;
+  }
+
+  :focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
   }
 }
 
@@ -303,3 +312,371 @@
 
 /* ─── Selection ──────────────────────────────────────────────── */
 ::selection { background: rgba(244,63,94,0.3); color: white; }
+
+/* ─── Navbar ─────────────────────────────────────────────────────
+   Action controls never shrink; as space runs out they collapse to icons
+   (labels stay as aria-label/title), and the tab strip scrolls. Below 760px
+   the bar wraps into two rows: brand + actions, then tabs. */
+.nav {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 12px;
+  gap: 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  background: var(--bg-surface);
+  position: relative;
+  z-index: 100;
+  flex-shrink: 0;
+}
+
+.nav-brand { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.nav-divider { width: 1px; height: 20px; background: rgba(255,255,255,0.06); flex-shrink: 0; }
+
+.nav-primary { display: flex; align-items: center; gap: 2px; min-width: 0; flex: 0 1 auto; }
+.nav-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+.nav-tabs::-webkit-scrollbar { display: none; }
+.nav-tabs[data-overflow] {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 16px), transparent);
+          mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 16px), transparent);
+}
+
+.nav-tab {
+  padding: 4px 10px;
+  min-height: 30px;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  color: #94a3b8;
+  background: transparent;
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background-color 150ms, color 150ms;
+}
+.nav-tab:hover { color: #e2e8f0; background: rgba(255,255,255,0.04); }
+.nav-tab[aria-current="page"] { color: #f1f5f9; font-weight: 600; background: rgba(255,255,255,0.08); }
+.nav-tab-icon { opacity: 0.6; }
+
+.nav-more { position: relative; flex-shrink: 0; }
+.nav-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 220px;
+  background: #0d1117;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.8), 0 0 15px rgba(56,189,248,0.1);
+  padding: 6px;
+  z-index: 9999;
+  animation: fade-up 150ms ease-out;
+}
+
+.nav-spacer { flex: 1 1 0; min-width: 0; }
+.nav-menu-compact { display: none; }
+.nav-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+.nav-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  min-height: 30px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+  transition: all 150ms;
+}
+
+.nav-entry { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.nav-entry-caption { color: #64748b; font-size: 10px; font-family: var(--font-mono); white-space: nowrap; }
+.nav-entry select {
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: #cbd5e1;
+  cursor: pointer;
+  height: 32px;
+  width: 180px;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.nav-attack { flex-shrink: 0; min-width: 125px; justify-content: center; }
+.nav-short { display: none; }
+
+.nav-badge {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Progressive collapse, widest first (CSS px, so it follows browser zoom too). */
+@media (max-width: 1700px) {
+  .nav-badge-detail { display: none; }
+}
+@media (max-width: 1600px) {
+  .nav-entry-caption { display: none; }
+  .nav-chip .nav-label { display: none; }
+  .nav-chip { padding: 4px 8px; }
+}
+@media (max-width: 1340px) {
+  .nav-reset .nav-label { display: none; }
+  .nav-reset { padding: 8px 10px; }
+  .nav-entry select { width: 150px; }
+}
+@media (max-width: 1100px) {
+  .nav-badge { display: none; }            /* connection state stays in the status bar */
+  .nav-brand-text { display: none; }
+}
+@media (max-width: 760px) {
+  .nav { flex-wrap: wrap; row-gap: 0; padding: 0 10px; }
+  .nav-brand, .nav-actions { min-height: 48px; }
+  .nav-divider, .nav-spacer { display: none; }
+  .nav-actions { flex: 1 1 0; min-width: 0; justify-content: flex-end; gap: 6px; }
+  .nav-entry { flex: 1 1 auto; justify-content: flex-end; }
+  .nav-entry select { width: 100%; max-width: 180px; }
+  .nav-primary {
+    order: 3;
+    flex: 1 1 100%;
+    min-height: 40px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    margin: 0 -10px;
+    padding: 0 10px;
+  }
+  .nav-tabs { flex: 1 1 auto; }
+  .nav-menu { left: auto; right: 0; }
+  .nav-attack { min-width: 0; padding: 8px 12px; }
+  .nav-attack .nav-long { display: none; }
+  .nav-attack .nav-short { display: inline; }
+}
+
+/* ─── Responsive layout helpers ──────────────────────────────── */
+.app-main { flex: 1; display: flex; overflow: hidden; min-height: 0; min-width: 0; }
+
+/* Investigate: graph + agent terminal side by side, stacked on narrow screens. */
+.investigate { flex: 1; display: flex; min-width: 0; min-height: 0; }
+.investigate-graph { flex: 1; position: relative; min-width: 0; min-height: 0; }
+.investigate-panel {
+  width: clamp(320px, 32vw, 420px);
+  flex-shrink: 0;
+  height: 100%;
+  border-left: 1px solid rgba(255,255,255,0.05);
+  min-height: 0;
+}
+@media (max-width: 900px) {
+  .investigate { flex-direction: column; }
+  .investigate-graph { flex: 1 1 45%; }
+  .investigate-panel { width: 100%; height: auto; flex: 1 1 55%; border-left: none; border-top: 1px solid rgba(255,255,255,0.05); }
+}
+
+/* Agent view: log + memory panel side by side, stacked on narrow screens. */
+.agent-body { flex: 1; display: flex; min-height: 0; min-width: 0; }
+.agent-memory { width: 340px; flex-shrink: 0; }
+@media (max-width: 900px) {
+  .agent-body { flex-direction: column; }
+  .agent-memory { width: 100%; flex: 0 1 45%; min-height: 0; border-left: none !important; border-top: 1px solid rgba(255,255,255,0.06); }
+}
+
+/* Copilot: question sidebar + chat side by side, stacked on narrow screens. */
+.copilot { display: flex; }
+.copilot-sidebar { width: 320px; flex-shrink: 0; }
+@media (max-width: 900px) {
+  .copilot { flex-direction: column; }
+  .copilot-sidebar { width: 100%; flex: 0 1 40%; min-height: 0; border-right: none !important; border-bottom: 1px solid var(--border-subtle); }
+}
+
+/* Status bar: one line that truncates instead of wrapping over itself. */
+.status-bar { white-space: nowrap; overflow: hidden; }
+.status-bar > * { flex-shrink: 0; }
+.status-bar .status-tagline { flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 760px) {
+  .status-bar { gap: 12px !important; padding: 0 10px !important; }
+  .status-bar .status-tagline, .status-bar .status-extra { display: none; }
+}
+
+/* Comparison tables keep their columns and scroll sideways on small screens. */
+.scroll-x { overflow-x: auto; }
+.scroll-x > * { min-width: 560px; }
+
+/* Respect reduced-motion: stop the ticker marquee. */
+@media (prefers-reduced-motion: reduce) {
+  [data-marquee] { animation: none !important; }
+}
+
+/* ─── Devices: touch, phones, landscape, notches ─────────────────
+   Applies on top of the desktop styles; desktop with a mouse is unaffected. */
+
+/* Notched phones (viewport-fit=cover): keep chrome clear of the notch and home indicator. */
+.nav { padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); padding-top: env(safe-area-inset-top); }
+.status-bar { height: calc(28px + env(safe-area-inset-bottom)) !important; padding-bottom: env(safe-area-inset-bottom) !important; }
+
+/* Touch screens: finger-sized targets, no double-tap delay, and 16px form fields
+   (iOS Safari zooms the page when a focused field is smaller than 16px). */
+@media (pointer: coarse) {
+  button, select, [role="button"], [role="menuitem"], [role="tab"],
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]) {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+  button, [role="button"] { min-width: 44px; }
+  input, select, textarea { font-size: 16px !important; }
+  .nav-entry select { height: 44px; }
+  .nav-chip, .nav-reset { justify-content: center; }
+}
+
+/* Phones and tablets: a readable type floor. Most components size text inline (9–10px for captions),
+   so the floor targets those inline sizes and the matching Tailwind arbitrary sizes. */
+@media (max-width: 760px), (pointer: coarse) {
+  :where([style*="font-size: 8px"], [style*="font-size: 8.5px"], [style*="font-size: 9px"], [style*="font-size: 9.5px"],
+         [style*="font-size: 10px"], [style*="font-size: 10.5px"], .text-\[9px\], .text-\[10px\], .text-\[10\.5px\]) { font-size: 11px !important; }
+}
+@media (max-width: 760px) {
+  :where([style*="font-size: 11px"], [style*="font-size: 11.5px"], .text-\[11px\], .text-\[11\.5px\]) { font-size: 12px !important; }
+}
+
+/* Modals become scrollable sheets that always fit the screen. */
+.modal-sheet { max-height: 100%; overflow-y: auto !important; overscroll-behavior: contain; }
+@media (max-width: 760px) {
+  .modal-backdrop { padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom)) !important; align-items: flex-end !important; }
+  .modal-sheet { border-radius: 14px !important; }
+}
+
+/* Graph node inspector: a bottom sheet across the graph on phones instead of a fixed card. */
+@media (max-width: 760px) {
+  .node-inspector { left: 8px !important; right: 8px; bottom: 8px !important; width: auto !important; max-height: calc(100% - 16px); overflow-y: auto; }
+}
+
+/* Short screens (phones in landscape): give the content the height.
+   One-row navbar, no ticker, no status bar. */
+@media (max-height: 500px) {
+  .ticker, .status-bar { display: none !important; }
+  .nav { flex-wrap: nowrap; }
+  .nav-brand, .nav-actions { min-height: 48px; }
+  .nav-brand-text, .nav-divider, .nav-badge, .nav-entry-caption { display: none; }
+  .nav-primary { order: 0; flex: 1 1 auto; min-height: 0; border-top: none; margin: 0; padding: 0; }
+  .nav-actions { flex: 0 0 auto; gap: 6px; }
+  .nav-entry { flex: 0 1 auto; }
+  .nav-entry select { width: 130px; }
+  .nav-spacer { display: none; }
+  .nav-chip .nav-label, .nav-reset .nav-label { display: none; }
+  .nav-attack .nav-long { display: none; }
+  .nav-attack .nav-short { display: inline; }
+  .nav-attack { min-width: 0; padding: 8px 12px; }
+}
+
+/* Page padding: desktop paddings (24–48px) waste a third of a phone's width. */
+@media (max-width: 760px) {
+  .page-pad { padding: 16px 14px !important; }
+}
+
+/* Header + list views (Triage, Decision Trail): on phones and short screens the whole view
+   scrolls (header + list) instead of pinning a tall header over a sliver of list. */
+@media (max-width: 760px), (max-height: 500px) {
+  .triage { overflow-y: auto !important; }
+  .triage-head { padding: 12px 14px !important; }
+  .triage-list { flex: none !important; overflow: visible !important; padding: 8px 14px 20px !important; }
+}
+
+/* Cypher playground: editor stacked over results on narrow screens. */
+@media (max-width: 767px) {
+  .cypher-editor { flex: 0 0 auto; max-height: 55%; }
+}
+
+/* Small phones: the first row keeps logo, identity picker, Attack and Reset;
+   Judge Tour and MCP move into the More menu. */
+@media (max-width: 480px) {
+  .nav-chip-tour, .nav-chip-mcp { display: none; }
+  .nav-menu-compact { display: flex; }
+  .nav-entry { flex: 1 1 auto; min-width: 0; }
+  .nav-entry select { max-width: none; }
+}
+
+/* Triage rows on phones: show the whole edge (wrapping) instead of "Backend…". */
+@media (max-width: 760px) {
+  .triage-path { white-space: normal !important; overflow-wrap: anywhere; }
+}
+@media (max-width: 480px) {
+  .impact-bar { display: none; }
+}
+
+/* Selects on touch devices: WebKit falls back to a white native control (light text on white),
+   so draw our own dark control with a chevron. */
+@media (pointer: coarse) {
+  select {
+    -webkit-appearance: none;
+    appearance: none;
+    background-color: rgba(0,0,0,0.5) !important;
+    color: #e2e8f0 !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2394a3b8' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px !important;
+    text-overflow: ellipsis;
+  }
+  select option { background: #0d1117; color: #e2e8f0; }
+}
+
+/* Graph overlays: the legend and the count badge would cover a phone-sized graph;
+   the status bar already shows the counts and node colours are labelled. */
+@media (max-width: 760px), (max-height: 500px) {
+  .graph-legend, .graph-info { display: none !important; }
+}
+
+/* Cypher playground, stacked: the editor needs a real height (its textarea is absolutely positioned). */
+@media (max-width: 767px) {
+  .cypher-editor { max-height: none; }
+  .cypher-editor-area { flex: none; height: 180px; }
+}
+
+/* Agent view on phones and short screens: one scrolling page (controls, log, memory). */
+@media (max-width: 760px), (max-height: 500px) {
+  .agent-root { overflow-y: auto !important; }
+  .agent-body { flex: none !important; overflow: visible !important; }
+  .agent-log { flex: none !important; min-height: 260px; overflow: visible !important; }
+  .agent-memory { flex: none !important; }
+}
+
+/* Copilot on phones: give the chat most of the height; the sidebar scrolls on its own. */
+@media (max-width: 760px) {
+  .copilot-sidebar { flex: 0 1 32% !important; }
+}
+
+/* Graph camera controls on touch screens: solid panel and finger-sized glyphs. */
+@media (pointer: coarse) {
+  .graph-controls { background: #0b1120 !important; }
+  .graph-controls button { font-size: 18px !important; color: #f1f5f9 !important; background: rgba(255,255,255,0.08) !important; }
+}
+
+/* Investigate on short screens (phones in landscape): graph and agent panel side by side,
+   overriding the narrow-width stacking above. */
+@media (max-height: 500px) {
+  .investigate { flex-direction: row; }
+  .investigate-graph { flex: 1 1 auto; }
+  .investigate-panel { width: min(46%, 420px); height: 100%; flex: none; border-top: none; border-left: 1px solid rgba(255,255,255,0.05); }
+}
+

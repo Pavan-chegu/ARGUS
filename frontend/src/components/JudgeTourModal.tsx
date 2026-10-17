@@ -129,6 +129,7 @@ export const JudgeTourModal: React.FC<JudgeTourModalProps> = ({ isOpen, onClose,
 
   return (
     <div
+      className="modal-backdrop"
       style={{
         position: 'fixed',
         inset: 0,
@@ -142,6 +143,7 @@ export const JudgeTourModal: React.FC<JudgeTourModalProps> = ({ isOpen, onClose,
       }}
     >
       <div
+        className="modal-sheet"
         style={{
           width: '100%',
           maxWidth: 680,

@@ -245,6 +245,11 @@ export const DecisionTrailView: React.FC<DecisionTrailViewProps> = ({
         : src.kind === 'run'
           ? await fetchTraceByRun(src.id)
           : await fetchTraceByIncident(src.id);
+      if (src.kind === 'latest' && data.decisions.length === 0) {
+        setTrace(null);
+        setError({ message: 'No decision trail recorded yet', notFound: true });
+        return;
+      }
       setTrace(data);
     } catch (e: any) {
       setTrace(null);
@@ -286,6 +291,7 @@ export const DecisionTrailView: React.FC<DecisionTrailViewProps> = ({
   const inputStyle: React.CSSProperties = {
     background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8,
     color: '#cbd5e1', fontSize: 11, fontFamily: 'var(--font-mono)', padding: '5px 10px', outline: 'none',
+    maxWidth: '100%', minWidth: 0,
   };
   const btnStyle = (accent: string): React.CSSProperties => ({
     padding: '5px 12px', borderRadius: 8, fontSize: 11, fontFamily: 'var(--font-mono)', cursor: loading ? 'not-allowed' : 'pointer',
@@ -293,9 +299,9 @@ export const DecisionTrailView: React.FC<DecisionTrailViewProps> = ({
   });
 
   return (
-    <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', fontFamily: 'var(--font-mono)' }}>
+    <div className="triage" style={{ flex: 1, minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', fontFamily: 'var(--font-mono)' }}>
       {/* Header */}
-      <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
+      <div className="triage-head" style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
           <h2 style={{ margin: 0, fontSize: 18, color: '#f1f5f9', fontWeight: 800 }}>Decision Trail</h2>
           <span style={{ fontSize: 12, color: '#475569' }}>
@@ -346,7 +352,7 @@ export const DecisionTrailView: React.FC<DecisionTrailViewProps> = ({
       </div>
 
       {/* Body */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px 24px' }}>
+      <div className="triage-list" style={{ flex: 1, overflowY: 'auto', padding: '16px 24px 24px' }}>
         {loading && (
           <div style={{ padding: 48, textAlign: 'center', color: '#475569', fontSize: 13 }}>Loading decision trail…</div>
         )}

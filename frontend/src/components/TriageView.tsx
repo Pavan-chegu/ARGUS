@@ -39,7 +39,7 @@ function SeverityBadge({ sev }: { sev: string }) {
 function ImpactBar({ score }: { score: number }) {
   const color = score >= 75 ? '#f87171' : score >= 50 ? '#fbbf24' : score >= 25 ? '#60a5fa' : '#34d399';
   return (
-    <div style={{ width: 60, height: 5, background: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden' }}>
+    <div className="impact-bar" style={{ width: 60, flexShrink: 0, height: 5, background: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden' }}>
       <div style={{ width: `${score}%`, height: '100%', background: color, borderRadius: 3 }} />
     </div>
   );
@@ -112,10 +112,10 @@ export const TriageView: React.FC = () => {
   const sc = result?.severity_counts ?? {};
 
   return (
-    <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', fontFamily: 'var(--font-mono)' }}>
+    <div className="triage" style={{ flex: 1, minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', fontFamily: 'var(--font-mono)' }}>
       {/* Header */}
-      <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 12 }}>
+      <div className="triage-head" style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '8px 12px', marginBottom: 12 }}>
           <h2 style={{ margin: 0, fontSize: 18, color: '#f1f5f9', fontWeight: 800 }}>Findings Triage</h2>
           <span style={{ fontSize: 12, color: '#475569' }}>{result?.headline}</span>
           <div style={{ flex: 1 }} />
@@ -150,7 +150,7 @@ export const TriageView: React.FC = () => {
         )}
 
         {/* Filters */}
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
           {(['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] as SeverityFilter[]).map(s => (
             <button key={s} onClick={() => setFilter(s)}
               style={{
@@ -165,13 +165,13 @@ export const TriageView: React.FC = () => {
           <input
             value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Filter by name or type…"
-            style={{ marginLeft: 'auto', padding: '5px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#cbd5e1', fontSize: 11, outline: 'none', width: 200 }}
+            style={{ marginLeft: 'auto', padding: '5px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#cbd5e1', fontSize: 11, outline: 'none', width: 200, maxWidth: '100%' }}
           />
         </div>
       </div>
 
       {/* Findings list */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px 24px' }}>
+      <div className="triage-list" style={{ flex: 1, overflowY: 'auto', padding: '8px 24px 24px' }}>
         {filtered.length === 0 ? (
           <div style={{ padding: 48, textAlign: 'center', color: '#475569', fontSize: 13 }}>No findings match the current filter.</div>
         ) : filtered.map((f, i) => {
@@ -188,7 +188,7 @@ export const TriageView: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ width: 28, color: '#475569', fontSize: 10, textAlign: 'right', flexShrink: 0 }}>#{i + 1}</span>
                 <span style={{ fontSize: 14 }}>{REL_ICON[f.rel_type] ?? '🔒'}</span>
-                <span style={{ fontSize: 12, color: '#cbd5e1', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span className="triage-path" style={{ fontSize: 12, color: '#cbd5e1', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   <span style={{ color: '#f1f5f9', fontWeight: 600 }}>{f.src}</span>
                   <span style={{ color: '#475569' }}> —{f.rel_type}→ </span>
                   <span style={{ color: f.dst_is_crown_jewel ? '#fbbf24' : '#f1f5f9', fontWeight: f.dst_is_crown_jewel ? 700 : 400 }}>{f.dst}</span>
@@ -200,7 +200,7 @@ export const TriageView: React.FC = () => {
               </div>
 
               {isOpen && (
-                <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.05)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 24px', fontSize: 11 }}>
+                <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.05)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '6px 24px', fontSize: 11 }}>
                   {[
                     ['Source', `${f.src} (${f.src_label})`],
                     ['Destination', `${f.dst} (${f.dst_label})`],

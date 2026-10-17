@@ -102,7 +102,7 @@ const AgentLog: React.FC<{ lines: LogLine[] }> = ({ lines }) => {
 const KillChainBar: React.FC<{ phases: KillChainPhase[] }> = ({ phases }) => (
   <div style={{ display: 'flex', gap: 2, padding: '8px 0' }}>
     {phases.map((phase, i) => (
-      <div key={phase.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center', position: 'relative' }}>
+      <div key={phase.id} title={phase.name} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center', position: 'relative' }}>
         <div
           style={{
             width: '100%',

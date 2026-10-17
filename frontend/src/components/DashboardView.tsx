@@ -125,6 +125,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onStartDemo, onCha
 
   return (
     <div
+      className="page-pad"
       style={{
         flex: 1,
         height: '100%',
@@ -251,7 +252,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onStartDemo, onCha
         </div>
 
         {/* Stats grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 36 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14, marginBottom: 36 }}>
           <StatCard
             value={stats?.total_nodes ?? '…'}
             label="IAM Nodes"
@@ -335,10 +336,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onStartDemo, onCha
             Qualitative comparison. Vector-side behaviour is not measured here; see Benchmark (simulated baseline) for details.
           </p>
 
-          <div style={{
+          <div className="scroll-x" style={{
             background: 'rgba(8,14,28,0.9)',
             border: '1px solid rgba(255,255,255,0.06)',
-            borderRadius: 14, overflow: 'hidden',
+            borderRadius: 14, overflowY: 'hidden',
           }}>
             {/* Header */}
             <div style={{
@@ -384,7 +385,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onStartDemo, onCha
             A 3-phase autonomous agent loop powered by FalkorDB graph traversal.
           </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14 }}>
             {[
               {
                 step: '01',

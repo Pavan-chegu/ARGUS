@@ -62,11 +62,10 @@ export const ThreatIntelFeed: React.FC = () => {
 
   return (
     <div
+      className="ticker"
       style={{
-        position: 'fixed',
-        top: 48, // below navbar
-        left: 0,
-        right: 0,
+        position: 'relative', // in normal flow below the navbar, whatever height the navbar wraps to
+        flexShrink: 0,
         height: 28,
         background: 'rgba(4, 7, 16, 0.96)',
         borderBottom: '1px solid rgba(255,255,255,0.04)',
@@ -112,6 +111,7 @@ export const ThreatIntelFeed: React.FC = () => {
         }}
       >
         <div
+          data-marquee
           style={{
             display: 'flex',
             alignItems: 'center',

@@ -45,6 +45,7 @@ export interface RedTeamAttackResult {
   path_nodes: GraphNode[];
   steps: RedTeamStep[];
   run_id?: string | null;
+  incident_id?: string | null;
 }
 
 export interface BlueTeamRemediationResult {
@@ -107,11 +108,14 @@ export async function runBlueTeamRemediation(attackResult: RedTeamAttackResult):
   return res.json();
 }
 
-export async function applyRemediationPatch(sourceName: string, targetName: string) {
+export async function applyRemediationPatch(sourceName: string, targetName: string,
+                                            entrypoint?: string, incidentId?: string | null) {
+  // entrypoint + incident_id link the :Remediation (and the Blue Team decision) to the incident.
   const res = await fetch(`${API_BASE}/simulate/apply-patch`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ source_name: sourceName, target_name: targetName }),
+    body: JSON.stringify({ source_name: sourceName, target_name: targetName,
+                           entrypoint: entrypoint ?? null, incident_id: incidentId ?? null }),
   });
   return res.json();
 }
@@ -216,6 +220,11 @@ export async function runCypherPlayground(query: string) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ query }),
   });
+  if (!res.ok) {
+    // e.g. 400 for a write sent to the read-only playground: surface FalkorDB's message
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.detail ?? `Query failed (HTTP ${res.status})`);
+  }
   return res.json();
 }
 

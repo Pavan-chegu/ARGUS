@@ -83,6 +83,7 @@ const NodeInspector: React.FC<NodeInspectorProps> = ({
 
   return (
     <div
+      className="node-inspector"
       style={{
         position: 'absolute',
         bottom: 24,
@@ -176,6 +177,7 @@ const StatusBar: React.FC<{
   isFalkorDown: boolean;
 }> = ({ topology, attackResult, isRemediated, isFalkorDown }) => (
   <div
+    className="status-bar"
     style={{
       flexShrink: 0,
       height: 28,
@@ -183,11 +185,11 @@ const StatusBar: React.FC<{
       alignItems: 'center',
       padding: '0 16px',
       gap: 20,
+      color: '#94a3b8',
       borderTop: '1px solid rgba(255,255,255,0.04)',
       background: 'var(--bg-surface)',
       fontFamily: 'var(--font-mono)',
       fontSize: 10,
-      color: '#475569',
     }}
   >
     {isFalkorDown
@@ -196,20 +198,20 @@ const StatusBar: React.FC<{
     {topology && (
       <>
         <span>⬡ {topology.count_nodes} nodes</span>
-        <span>⇌ {topology.count_links} edges</span>
+        <span className="status-extra">⇌ {topology.count_links} edges</span>
       </>
     )}
     {attackResult && (
       <>
         <span style={{ color: '#f87171' }}>⚡ Attack: {attackResult.total_hops} hops</span>
-        <span style={{ color: '#f87171' }}>{attackResult.execution_time_ms}ms</span>
+        <span className="status-extra" style={{ color: '#f87171' }}>{attackResult.execution_time_ms}ms</span>
       </>
     )}
     {isRemediated && (
       <span style={{ color: '#34d399' }}>⊘ Patch applied · Crown Jewels protected</span>
     )}
     <div style={{ flex: 1 }} />
-    <span>FalkorDB Rule #3 — Graph &gt; Vector RAG for transitive IAM analysis</span>
+    <span className="status-tagline">FalkorDB Rule #3 — Graph &gt; Vector RAG for transitive IAM analysis</span>
   </div>
 );
 
@@ -306,7 +308,8 @@ export const App: React.FC = () => {
     setIsApplyingPatch(true);
     const { source_name, target_name } = remediationResult.choke_point;
     try {
-      await applyRemediationPatch(source_name, target_name);
+      await applyRemediationPatch(source_name, target_name,
+        attackResult?.entrypoint ?? selectedEntrypoint, attackResult?.incident_id ?? null);
       setSeveredEdge({ src: source_name, dst: target_name });
       setIsRemediated(true);
       await loadTopology();
@@ -354,7 +357,7 @@ export const App: React.FC = () => {
   }, []);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', overflow: 'hidden', background: 'var(--bg-base)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden', background: 'var(--bg-base)' }}>
       <Navbar
         activeTab={activeTab}
         onChangeTab={setActiveTab}
@@ -396,8 +399,8 @@ export const App: React.FC = () => {
         </div>
       )}
 
-      {/* ── Main content area (push down 28px for ticker) ─────── */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', minHeight: 0, marginTop: 28 }}>
+      {/* ── Main content area ─────── */}
+      <div className="app-main">
 
         {/* HOME / DASHBOARD */}
         {(activeTab as string) === 'home' && (
@@ -409,9 +412,9 @@ export const App: React.FC = () => {
         )}
 
         {activeTab === 'graph' && (
-          <>
+          <div className="investigate">
             {/* Graph Canvas — fills remaining space */}
-            <div style={{ flex: 1, position: 'relative', minWidth: 0 }}>
+            <div className="investigate-graph">
               <GraphCanvas
                 topology={topology}
                 activePathNodeIds={activePathNodeIds}
@@ -446,8 +449,8 @@ export const App: React.FC = () => {
               )}
             </div>
 
-            {/* Right Agent Terminal — fixed width */}
-            <div style={{ width: 420, flexShrink: 0, height: '100%', borderLeft: '1px solid rgba(255,255,255,0.05)' }}>
+            {/* Agent Terminal — right column, or below the graph on narrow screens */}
+            <div className="investigate-panel">
               <AgentTerminal
                 attackResult={attackResult}
                 remediationResult={remediationResult}
@@ -468,7 +471,7 @@ export const App: React.FC = () => {
                 onViewDecisionTrail={handleViewDecisionTrail}
               />
             </div>
-          </>
+          </div>
         )}
 
         {activeTab === 'triage' && <TriageView />}

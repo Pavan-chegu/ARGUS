@@ -410,8 +410,8 @@ export const CopilotView: React.FC = () => {
 
   return (
     <div
+      className="copilot"
       style={{
-        display: 'flex',
         height: '100%',
         width: '100%',
         overflow: 'hidden',
@@ -420,9 +420,8 @@ export const CopilotView: React.FC = () => {
     >
       {/* ── Left Sidebar: RAG Architecture & Suggested Questions ── */}
       <aside
+        className="copilot-sidebar"
         style={{
-          width: 320,
-          flexShrink: 0,
           borderRight: '1px solid var(--border-subtle)',
           background: 'var(--bg-surface)',
           display: 'flex',
@@ -631,6 +630,8 @@ export const CopilotView: React.FC = () => {
       <main
         style={{
           flex: 1,
+          minWidth: 0,
+          minHeight: 0,
           display: 'flex',
           flexDirection: 'column',
           height: '100%',
@@ -710,7 +711,7 @@ export const CopilotView: React.FC = () => {
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))',
                   gap: 10,
                   width: '100%',
                   marginTop: 8,
@@ -911,7 +912,7 @@ export const CopilotView: React.FC = () => {
                   <div
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: 'repeat(4, 1fr)',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
                       gap: 8,
                     }}
                   >
@@ -1182,11 +1183,12 @@ export const CopilotView: React.FC = () => {
             }}
             style={{
               display: 'flex',
+              flexWrap: 'wrap',
               gap: 10,
               alignItems: 'center',
             }}
           >
-            <div style={{ flex: 1, position: 'relative' }}>
+            <div style={{ flex: '1 1 220px', minWidth: 0, position: 'relative' }}>
               <input
                 ref={inputRef}
                 type="text"
@@ -1262,6 +1264,7 @@ export const CopilotView: React.FC = () => {
           <div
             style={{
               display: 'flex',
+              flexWrap: 'wrap',
               alignItems: 'center',
               gap: 8,
               marginTop: 10,
