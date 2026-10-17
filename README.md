@@ -354,7 +354,7 @@ render.yaml               Render deployment blueprint
 ## Data and AI use
 
 - **Data:** the IAM graph is fully synthetic and generated deterministically (`SEED=42`). It contains no real accounts, credentials or personal data.
-- **AI assistance:** Claude (Anthropic) was used as a coding assistant. The runtime LLM agent uses Groq `llama-3.3-70b-versatile`.
+- **AI assistance:** Claude (Anthropic) was used as a coding assistant. The runtime LLM agent uses Groq (default `openai/gpt-oss-20b`; if the configured model is retired, an available one is picked automatically).
 
 ## Stack
 

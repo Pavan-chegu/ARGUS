@@ -17,14 +17,29 @@ router = APIRouter(prefix="/api/triage", tags=["triage"])
 
 # ─── helpers ────────────────────────────────────────────────────────────────
 
-def _crown_jewel_reachable(src_name: str, hops: int = 6) -> bool:
-    """True if a shortest path from src_name reaches any crown jewel."""
-    path = falkor_client.engine.find_shortest_path(src_name, max_hops=hops)
-    return path is not None and len(path) > 1
+# Both helpers answer for every source at once: one Cypher query each instead of two
+# round-trips per source node (~200 sequential queries took ~23 s against FalkorDB Cloud).
 
-def _reachable_count(src_name: str, hops: int = 4) -> int:
-    blast = falkor_client.engine.compute_blast_radius(src_name, max_hops=hops)
-    return blast.get("reachable_nodes_count", 0)
+def _crown_jewel_reachers(names: List[str], hops: int = 6) -> set:
+    """Names among `names` that have a path of <= hops attack edges to any crown jewel."""
+    rows = falkor_client.engine.q(
+        f"UNWIND $names AS x "
+        f"MATCH (s) WHERE s.name = x AND NOT s:Incident "
+        f"MATCH (t:Resource) WHERE t.is_crown_jewel = true OR t.sensitivity = 'CrownJewel' "
+        f"WITH x, shortestPath((s)-[:{ATTACK_RELS}*1..{int(hops)}]->(t)) AS p "
+        f"WHERE p IS NOT NULL RETURN DISTINCT x",
+        {"names": names})
+    return {r[0] for r in rows}
+
+def _reachable_counts(names: List[str], hops: int = 4) -> Dict[str, int]:
+    """{name: number of distinct nodes reachable within `hops` attack edges (excluding itself)}."""
+    rows = falkor_client.engine.q(
+        f"UNWIND $names AS x "
+        f"MATCH (s) WHERE s.name = x "
+        f"MATCH (s)-[:{ATTACK_RELS}*1..{int(hops)}]->(m) WHERE m <> s "
+        f"RETURN x, count(DISTINCT m)",
+        {"names": names})
+    return {r[0]: int(r[1]) for r in rows}
 
 def _betweenness_scores() -> Dict[str, float]:
     """
@@ -86,16 +101,15 @@ def get_findings(max_findings: int = 200) -> Dict[str, Any]:
     edges = falkor_client.engine.attack_edges()
     betweenness = _betweenness_scores()
 
-    # Cache per-source so we don't repeat expensive calls
-    src_cj_cache: Dict[str, bool] = {}
-    src_blast_cache: Dict[str, int] = {}
+    sources = sorted({e["src"] for e in edges})
+    reaches_cj = _crown_jewel_reachers(sources)
+    reach_counts = _reachable_counts(sources)
+    src_cj_cache = {s: s in reaches_cj for s in sources}
+    src_blast_cache = {s: reach_counts.get(s, 0) for s in sources}
 
     findings = []
     for edge in edges:
         src = edge["src"]
-        if src not in src_cj_cache:
-            src_cj_cache[src] = _crown_jewel_reachable(src)
-            src_blast_cache[src] = _reachable_count(src)
 
         score = _impact_score(
             edge, betweenness,

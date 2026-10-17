@@ -12,7 +12,7 @@ The agent is given 5 tools:
   apply_fix          — sever the choke-point edge in FalkorDB
   recall_incidents   — episodic memory of past attacks
 
-It runs a Groq tool-calling loop (llama-3.3-70b-versatile), streaming
+It runs a tool-calling loop on Groq (model auto-picked from those available), streaming
 each step as an SSE event so the UI can render it live.
 """
 import json
@@ -331,10 +331,15 @@ def _run_agent_loop(
                             "tool_choice": "auto",
                             "temperature": 0.0,
                             "max_tokens": 800,
+                            **llm_module.reasoning_params(model),
                         },
                     )
                     if resp.status_code == 429 and attempt < 2:
                         time.sleep(2.0 * (attempt + 1))
+                        continue
+                    if llm_module.model_rejected(resp) and attempt < 2:
+                        llm_module.mark_unusable(model)          # retired model: switch and retry
+                        model = llm_module._pick_model(client)
                         continue
                     resp.raise_for_status()
                     break
